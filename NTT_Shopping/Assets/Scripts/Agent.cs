@@ -2,13 +2,18 @@ using UnityEngine;
 using UnityEngine.Networking;
 using System.Text;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 public class Agent : MonoBehaviour
 {
     protected UnityEngine.AI.NavMeshAgent navMeshAgent;
     protected string state = "idle"; // Estado inicial
     private bool isRequestInProgress = false; // Flag para evitar múltiplos requests
+    public string store; // Nome/ID da loja que o cliente deve visitar
 
+    protected virtual void Update()
+    {
+    }
     protected virtual void Start()
     {
         navMeshAgent = GetComponent<UnityEngine.AI.NavMeshAgent>();
@@ -33,8 +38,19 @@ public class Agent : MonoBehaviour
         // Inicia o primeiro request, se nenhum estiver em progresso
         if (!isRequestInProgress)
         {
-            string response = await SendPrompt("Sapato", "client");
-            Debug.Log("Resposta do servidor: " + response);
+            string ClientResponse = await SendPrompt("Sapato", "client");
+            string formattedResponse = ExtractResponse(ClientResponse);
+            Debug.Log("Pergunta do cliente: " + formattedResponse);
+
+            string SellerResponse = await SendPrompt(formattedResponse, "seller");
+            formattedResponse = ExtractResponse(SellerResponse);
+            Debug.Log("Resposta do vendedor: " + formattedResponse);
+
+            string FilteredStore = await SendPrompt(formattedResponse, "filter");
+            formattedResponse = ExtractResponse(FilteredStore);
+            Debug.Log("Loja filtrada: " + formattedResponse);
+            other.state = "searchingStore";
+            other.store = formattedResponse;
         }
     }
 
@@ -48,7 +64,6 @@ public class Agent : MonoBehaviour
 
         // Cria uma requisição POST para o endpoint do servidor
         string path = "http://localhost:8000/request/" + agent;
-        Debug.Log(path);
 
         using (UnityWebRequest request = new UnityWebRequest(path, "POST"))
         {
@@ -77,6 +92,32 @@ public class Agent : MonoBehaviour
             }
         }
     }
+
+    // 🔹 Método para extrair apenas o valor da chave "response" do JSON recebido
+    private string ExtractResponse(string jsonResponse)
+    {
+        if (string.IsNullOrEmpty(jsonResponse))
+        {
+            return "Resposta vazia ou inválida";
+        }
+
+        try
+        {
+            ResponseData data = JsonUtility.FromJson<ResponseData>(jsonResponse);
+            return data.response ?? "Chave 'response' não encontrada";
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError("Erro ao processar JSON: " + e.Message);
+            return "Erro na formatação do JSON";
+        }
+    }
+}
+
+[System.Serializable]
+public class ResponseData
+{
+    public string response;
 }
 
 

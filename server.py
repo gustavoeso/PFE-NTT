@@ -28,7 +28,7 @@ async def process_prompt(request: Request):
     prompt = data.get("prompt", "")
     AgentTask = Task(description = "O cliente diz o seguinte : {prompt}",
                      agent = ASeller,
-                     expected_output="Resposta ao cliente")
+                     expected_output="Responda a loja que melhor atende os desejos do cliente")
     
     try:
         finalCrew = Crew(agents=[ASeller], tasks=[AgentTask])
