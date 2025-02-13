@@ -1,44 +1,56 @@
-import os
-from dotenv import load_dotenv
 from fastapi import FastAPI, Request
-import uvicorn
-
-# Carrega as variáveis do arquivo .env
-load_dotenv()
-
-# Configura a API Key da OpenAI a partir do .env
-os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
-
-# Importa as classes do CrewAI
 from crewai import Agent, Crew, Task
+import uvicorn
+from agents import AClient, ASeller, AFilter 
 
 app = FastAPI()
 
-# Criação de um agente simples com CrewAI
-agent = Agent(
-    name="AgenteCalculador",
-    role="Um agente especializado em cálculos.",  # Agora como string
-    backstory="Treinado para resolver problemas aritméticos básicos, com experiência em soma, subtração, multiplicação e divisão.",  # Agora como string
-    goal="Responder perguntas aritméticas simples",
-    llm="gpt-4o",
-    memory=False  # Para este exemplo, não utilizamos memória
-)
-
-@app.post("/prompt")
+@app.post("/request/client")
 async def process_prompt(request: Request):
     data = await request.json()
     prompt = data.get("prompt", "")
-    AgentTask = Task(description = "Responda ao seguinte {prompt}",
-                     agent = agent,
-                     expected_output="Resposta ao prompt")
+    AgentTask = Task(description = "Pergunte para a vendedora da loja onde encontrar o seguinte produto : {prompt}",
+                     agent = AClient,
+                     expected_output="Uma pergunta para a vendedora da loja")
     
     try:
-        finalCrew = Crew(agents=[agent], tasks=[AgentTask])
-        # Utiliza o CrewAI para processar o prompt.
-        # Supondo que o método 'kickoff' aceite o parâmetro 'prompt'
-        # e retorne um dicionário com a chave "result" contendo a resposta.
+        finalCrew = Crew(agents=[AClient], tasks=[AgentTask])
         result = finalCrew.kickoff(inputs={"prompt" : prompt})
-        answer = result.get("result", "Sem resposta")
+        answer = result.raw.strip()
+    except Exception as e:
+        answer = f"Ocorreu um erro: {e}"
+    
+    return {"response": answer}
+
+@app.post("/request/seller")
+async def process_prompt(request: Request):
+    data = await request.json()
+    prompt = data.get("prompt", "")
+    AgentTask = Task(description = "O cliente diz o seguinte : {prompt}",
+                     agent = ASeller,
+                     expected_output="Resposta ao cliente")
+    
+    try:
+        finalCrew = Crew(agents=[ASeller], tasks=[AgentTask])
+        result = finalCrew.kickoff(inputs={"prompt" : prompt})
+        answer = result.raw.strip()
+    except Exception as e:
+        answer = f"Ocorreu um erro: {e}"
+    
+    return {"response": answer}
+
+@app.post("/request/filter")
+async def process_prompt(request: Request):
+    data = await request.json()
+    prompt = data.get("prompt", "")
+    AgentTask = Task(description = "Qual o número da loja que a vendedora respondeu nessa pergunta : {prompt}",
+                     agent = AFilter,
+                     expected_output="Apenas um número único")
+    
+    try:
+        finalCrew = Crew(agents=[AFilter], tasks=[AgentTask])
+        result = finalCrew.kickoff(inputs={"prompt" : prompt})
+        answer = result.raw.strip()
     except Exception as e:
         answer = f"Ocorreu um erro: {e}"
     
