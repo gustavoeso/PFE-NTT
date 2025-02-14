@@ -38,15 +38,18 @@ public class Agent : MonoBehaviour
         // Inicia o primeiro request, se nenhum estiver em progresso
         if (!isRequestInProgress)
         {
-            string ClientResponse = await SendPrompt("Sapato", "client");
+            string ClientResponse = await SendPrompt("Bola de Futebol", "client");
+            await Task.Delay(3000);
             string formattedResponse = ExtractResponse(ClientResponse);
             Debug.Log("Pergunta do cliente: " + formattedResponse);
 
             string SellerResponse = await SendPrompt(formattedResponse, "seller");
+            await Task.Delay(3000);
             formattedResponse = ExtractResponse(SellerResponse);
             Debug.Log("Resposta do vendedor: " + formattedResponse);
 
             string FilteredStore = await SendPrompt(formattedResponse, "filter");
+            await Task.Delay(3000);
             formattedResponse = ExtractResponse(FilteredStore);
             Debug.Log("Loja filtrada: " + formattedResponse);
             other.state = "searchingStore";

@@ -45,7 +45,7 @@ async def process_prompt(request: Request):
     prompt = data.get("prompt", "")
     AgentTask = Task(description = "Qual o número da loja que a vendedora respondeu nessa pergunta : {prompt}",
                      agent = AFilter,
-                     expected_output="Apenas um número único")
+                     expected_output="Apenas um número de 1 a 4, caso não exista loja correspondente retorne 0")
     
     try:
         finalCrew = Crew(agents=[AFilter], tasks=[AgentTask])

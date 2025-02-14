@@ -3,7 +3,6 @@ using UnityEngine.AI;
 
 public class Client : Agent
 {
-    public string store; // Nome/ID da loja que o cliente deve visitar
     private GameObject targetStore; // Referência à loja de destino
     protected override void Start()
     {
@@ -38,15 +37,6 @@ public class Client : Agent
     private GameObject FindClosestStore()
     {
         GameObject[] stores = GameObject.FindGameObjectsWithTag("Store");
-
-        foreach (GameObject storeObject in stores)
-        {
-            Store storeComponent = storeObject.GetComponent<Store>(); // Supondo que há um script Store
-            if (storeComponent != null && storeComponent.ID == store)
-            {
-                return storeObject; // Retorna a loja correta
-            }
-        }
 
         return null; // Retorna nulo se não encontrar nenhuma loja com o ID correspondente
     }
