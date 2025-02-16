@@ -9,7 +9,7 @@ public class Agent : MonoBehaviour
     protected UnityEngine.AI.NavMeshAgent navMeshAgent;
     protected string state = "idle"; // Estado inicial
     private bool isRequestInProgress = false; // Flag para evitar múltiplos requests
-    public string store; // Nome/ID da loja que o cliente deve visitar
+    protected GameObject targetStore;
 
     protected virtual void Update()
     {
@@ -38,7 +38,7 @@ public class Agent : MonoBehaviour
         // Inicia o primeiro request, se nenhum estiver em progresso
         if (!isRequestInProgress)
         {
-            string ClientResponse = await SendPrompt("Bola de Futebol", "client");
+            string ClientResponse = await SendPrompt("Livros de Fisica Newtoniana", "client");
             await Task.Delay(3000);
             string formattedResponse = ExtractResponse(ClientResponse);
             Debug.Log("Pergunta do cliente: " + formattedResponse);
@@ -53,7 +53,7 @@ public class Agent : MonoBehaviour
             formattedResponse = ExtractResponse(FilteredStore);
             Debug.Log("Loja filtrada: " + formattedResponse);
             other.state = "searchingStore";
-            other.store = formattedResponse;
+            other.targetStore = FindStore(formattedResponse);
         }
     }
 
@@ -114,6 +114,22 @@ public class Agent : MonoBehaviour
             Debug.LogError("Erro ao processar JSON: " + e.Message);
             return "Erro na formatação do JSON";
         }
+    }
+
+    private GameObject FindStore(string storeID)
+    {
+        GameObject[] stores = GameObject.FindGameObjectsWithTag("Store");
+
+        foreach (GameObject store in stores)
+        {
+            Store storeComponent = store.GetComponent<Store>();
+            if (storeComponent != null && storeComponent.storeID == storeID)
+            {
+                return store;
+            }
+        }
+
+        return null;
     }
 }
 

@@ -3,7 +3,6 @@ using UnityEngine.AI;
 
 public class Client : Agent
 {
-    private GameObject targetStore; // Referência à loja de destino
     protected override void Start()
     {
         base.Start();
@@ -23,23 +22,17 @@ public class Client : Agent
 
         if (state == "searchingStore" && targetStore != null)
         {
-            // Verifica se chegou ao destino
+            navMeshAgent.isStopped = false; // Continua o movimento
+            navMeshAgent.SetDestination(targetStore.transform.position);
             if (!navMeshAgent.pathPending && navMeshAgent.remainingDistance <= navMeshAgent.stoppingDistance)
             {
                 navMeshAgent.isStopped = true; // Para o movimento ao chegar na loja
                 state = "arrived"; // Atualiza o estado
-                Debug.Log("Cliente chegou à loja: " + store);
+                Debug.Log("Cliente chegou à loja: " + targetStore.GetComponent<Store>().storeID);
             }
         }
     }
 
-    // 🔹 Procura pela loja correta baseado na variável `store`
-    private GameObject FindClosestStore()
-    {
-        GameObject[] stores = GameObject.FindGameObjectsWithTag("Store");
-
-        return null; // Retorna nulo se não encontrar nenhuma loja com o ID correspondente
-    }
 }
 
 
