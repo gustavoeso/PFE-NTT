@@ -8,6 +8,8 @@ public class Agent : MonoBehaviour
 {
     protected UnityEngine.AI.NavMeshAgent navMeshAgent;
     protected string state = "idle"; // Estado inicial
+
+    private string requestedItem = "Um sushiman que trabalha 24 horas por dia não remunerado";
     private bool isRequestInProgress = false; // Flag para evitar múltiplos requests
     protected GameObject targetStore;
 
@@ -38,30 +40,55 @@ public class Agent : MonoBehaviour
         // Inicia o primeiro request, se nenhum estiver em progresso
         if (!isRequestInProgress)
         {
-            string ClientResponse = await SendPrompt("Livros de Fisica Newtoniana", "client");
-            await Task.Delay(3000);
+            string ClientResponse = await SendPrompt(requestedItem, "client");
             string formattedResponse = ExtractResponse(ClientResponse);
             Debug.Log("Pergunta do cliente: " + formattedResponse);
 
             string SellerResponse = await SendPrompt(formattedResponse, "seller");
-            await Task.Delay(3000);
             formattedResponse = ExtractResponse(SellerResponse);
             Debug.Log("Resposta do vendedor: " + formattedResponse);
 
             string FilteredStore = await SendPrompt(formattedResponse, "filter");
-            await Task.Delay(3000);
             formattedResponse = ExtractResponse(FilteredStore);
+
             Debug.Log("Loja filtrada: " + formattedResponse);
             other.state = "searchingStore";
-            other.targetStore = FindStore(formattedResponse);
+            other.navMeshAgent.isStopped = false;
+            Store targetStore = FindStore(formattedResponse);
+            Debug.Log("Loja encontrada: " + targetStore);
+            other.navMeshAgent.SetDestination(targetStore.transform.position);
+        }
+    }
+
+    public async Task StartConversationStore(Agent other)
+    {
+        if (navMeshAgent != null)
+        {
+            navMeshAgent.isStopped = true; // Para o movimento
+        }
+
+        if (other.navMeshAgent != null)
+        {
+            other.navMeshAgent.isStopped = true; // Para o outro agente também
+        }
+
+        state = "dialogue";
+        other.state = "dialogue";
+
+        // Inicia o primeiro request, se nenhum estiver em progresso
+        if (!isRequestInProgress)
+        {
+            string storeResponse = await SendPrompt(requestedItem, "clothes");
+            string formattedResponse = ExtractResponse(storeResponse);
+            Debug.Log("Resposta da Loja: " + formattedResponse);
         }
     }
 
     // 🔹 Método agora é assíncrono e retorna uma `Task<string>`
-    private async Task<string> SendPrompt(string prompt, string agent)
+    protected async Task<string> SendPrompt(string prompt, string agent)
     {
         isRequestInProgress = true; // Marca que há um request em andamento
-
+        prompt = prompt.Replace("\"", "");
         string jsonData = "{\"prompt\": \"" + prompt + "\"}";
         byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonData);
 
@@ -116,19 +143,16 @@ public class Agent : MonoBehaviour
         }
     }
 
-    private GameObject FindStore(string storeID)
+    protected Store FindStore(string storeID)
     {
-        GameObject[] stores = GameObject.FindGameObjectsWithTag("Store");
-
-        foreach (GameObject store in stores)
-        {
-            Store storeComponent = store.GetComponent<Store>();
-            if (storeComponent != null && storeComponent.storeID == storeID)
+        Store[] stores = FindObjectsByType<Store>(FindObjectsSortMode.None);
+        foreach (Store store in stores)
+        {   
+            if (store.StoreId == storeID)
             {
                 return store;
             }
         }
-
         return null;
     }
 }
