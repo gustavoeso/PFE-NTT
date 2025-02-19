@@ -10,6 +10,7 @@ from langchain_openai import ChatOpenAI
 from langchain_community.utilities import SQLDatabase
 from langchain_experimental.sql import SQLDatabaseChain
 from langchain.prompts.prompt import PromptTemplate
+from langchain.chains import LLMChain
 
 from sqlalchemy import create_engine, text
 
@@ -79,10 +80,49 @@ def search_database(nl_query: str):
     return (sql_text, rows)
 
 ##############################################################################
-# 3. Agents & Task
+# 3. Agents and Prompts
 ##############################################################################
 
-# The "comprador" is effectively the user. They have a single goal: buy a camisa branca.
+# A small Agent/Chain that dynamically generates the query for the 'lojas' table
+prompt_generator_prompt = PromptTemplate(
+    input_variables=["user_request"],
+    template="""
+Você é um especialista em mapear pedidos do comprador para uma consulta na tabela 'lojas'.
+
+A tabela 'lojas' tem colunas: id, tipo, numero.
+ - 'tipo' pode ser 'Roupas', 'Jogos', 'Skate', etc.
+
+O comprador quer: "{user_request}".
+
+Gere, em português, um comando de consulta (NÃO em SQL, mas um texto em linguagem natural)
+que será usado pelo pesquisador para encontrar a loja certa na tabela 'lojas'.
+
+Explique brevemente qual 'tipo' corresponde ao que o comprador quer. 
+Retorne APENAS o texto que o pesquisador usará, sem explicações adicionais.
+""",
+)
+prompt_generator_chain = LLMChain(
+    llm=llm,
+    prompt=prompt_generator_prompt,
+    verbose=True
+)
+
+prompt_generator_agent = Agent(
+    role="Gerador de Prompt",
+    goal="Dado o pedido do comprador, gerar o texto que será usado para consultar 'lojas'.",
+    backstory="Este Agente gera a prompt de pesquisa para a tabela lojas, baseado no pedido do comprador.",
+    tools=[],
+    llm=llm
+)
+
+pesquisador = Agent(
+    role="Pesquisador de Produtos",
+    goal="Interpretar o prompt do PromptGenerator e consultar somente a loja relevante (sem iterar por todas).",
+    backstory="Você sabe como usar o texto do PromptGenerator para fazer a query na tabela 'lojas'.",
+    tools=[],
+    llm=llm
+)
+
 comprador = Agent(
     role="Comprador",
     goal="Encontrar a melhor camisa branca e negociar diretamente o preço.",
@@ -91,67 +131,86 @@ comprador = Agent(
     memory=memory
 )
 
-# The "pesquisador" is the one who interacts with the DB. 
-pesquisador = Agent(
-    role="Pesquisador de Produtos",
-    goal="Interpretar o desejo do comprador e consultar somente a loja relevante (sem iterar por todas).",
-    backstory="Você conhece as categorias das lojas e sabe mapear 'camisa branca' para 'Roupas' => store 100.",
-    tools=[],
-    llm=llm
-)
-
-# A task instructing the "pesquisador" to find the store, get coordinates, and check availability.
+# A task that orchestrates the flow: "comprador -> prompt_generator -> pesquisador"
 task = Task(
     description=(
-        "Interpretar a requisição do comprador ('camisa branca'), "
-        "descobrir qual loja (apenas a adequada) em 'lojas', "
-        "pegar suas coordenadas em 'posicao', e consultar a tabela loja_{numero} "
-        "sobre a camisa branca. Não percorrer todas as lojas, apenas a correspondente."
+        "O comprador pede algo, o PromptGenerator gera a instrução para o pesquisador, "
+        "e então o pesquisador acha a loja na tabela 'lojas', depois pega posição e finalmente checa loja_{numero}."
     ),
-    agent=pesquisador,
+    agent=pesquisador,  # The 'pesquisador' is the main agent that we'll run in code
     tools=[],
     memory=memory,
-    expected_output="Dados da loja que vende 'camisa branca' e sua localização."
+    expected_output="Dados da loja que vende o item e sua localização."
 )
 
 crew = Crew(
-    agents=[pesquisador, comprador],
+    agents=[prompt_generator_agent, pesquisador, comprador],
     tasks=[task]
 )
 
 ##############################################################################
-# 4. Conversation / Logic Flow
+# 4. Additional Prompt & Chain for Searching in loja_{numero}
 ##############################################################################
 
-# The buyer's request:
-buyer_request = "Preciso de uma camisa branca elegante."
+prompt_loja_prompt = PromptTemplate(
+    input_variables=["store_number", "user_request"],
+    template="""
+Você é um especialista em mapear o pedido do comprador para uma consulta na tabela 'loja_{store_number}'.
 
-# Step A: Pesquisador interprets which store from 'lojas' matches "camisa branca"
-#   We'll rely on the LLM to guess that "camisa branca" => "Roupas" => store #100
-#   so we do just one query to find that store.
+A tabela 'loja_{store_number}' tem colunas: 
+  - produto (texto)
+  - qtd (inteiro)
+  - preco (decimal)
 
-nl_query_store = f"Na tabela 'lojas', qual a loja (id, tipo, numero) que combina com '{buyer_request}'? " \
-                 "A loja deve ser aquela que tenha tipo 'Roupas' pois 'camisa branca' é uma roupa. " \
-                 "Retorne somente a linha correspondente."
+O comprador quer: "{user_request}"
 
-sql_store, rows_store = search_database(nl_query_store)
-print("\nSQL used to interpret store:\n", sql_store)
-print("Store rows:\n", rows_store)
+Gere UMA LINHA de texto (em português) que especifique o que consultar nessa tabela,
+exatamente no formato:
+
+Na tabela 'loja_{store_number}', retorne produto, qtd, preco onde produto ILIKE '%...%'.
+
+Use a string do "user_request" no lugar de "...".  
+Retorne SOMENTE a linha final, sem explicações adicionais.
+"""
+)
+
+prompt_loja_chain = LLMChain(
+    llm=llm,
+    prompt=prompt_loja_prompt,
+    verbose=True
+)
+
+##############################################################################
+# 5. Flow Implementation
+##############################################################################
+
+# Step A: Buyer request
+buyer_request = "Preciso comprar o jogo de vídeo game Baldurs Door."
+
+print(f"\n[Comprador diz]: '{buyer_request}'")
+
+# Step B: PromptGenerator Agent -> creates the NATURAL LANGUAGE prompt for 'lojas'
+prompt_for_lojas = prompt_generator_chain.run({"user_request": buyer_request})
+print(f"\n[PromptGenerator output for 'lojas' query]:\n{prompt_for_lojas}")
+
+# Step C: Pesquisador uses that generated text to do the actual search in 'lojas'
+sql_store, rows_store = search_database(prompt_for_lojas)
+print("\n[SQL Generated by LLM / Pesquisador]:\n", sql_store)
+print("[Rows from DB]:\n", rows_store)
 
 if not rows_store:
-    print("Nenhuma loja encontrada para 'camisa branca'.")
+    print("Nenhuma loja encontrada para esse pedido do comprador.")
     exit(0)
 
-# Convert the single row to a dict
 store_row = rows_store[0]  # e.g. (1, 'Roupas', Decimal('100'))
 store_info = {
     "id": store_row[0],
     "tipo": store_row[1],
     "numero": int(store_row[2])
 }
-print("\nStore chosen by Pesquisador:\n", store_info)
+print("\n[Loja escolhida]:", store_info)
 
-# Step B: Get the store's coordinates from `posicao`
+# Step D: Get store coordinates from `posicao`
 nl_query_pos = (
     f"Na tabela 'posicao', retorne x,y,z onde numero = {store_info['numero']}."
 )
@@ -163,14 +222,28 @@ for r in rows_pos:
         "y": float(r[1]),
         "z": float(r[2])
     })
-print("\nCoordinates for store:", coords)
+print("[Coordenadas]:", coords)
 
-# Step C: Check the store's table `loja_{numero}` for "camisa branca"
-nl_query_loja = (
-    f"Na tabela 'loja_{store_info['numero']}', retorne produto, qtd, preco "
-    f"onde produto ILIKE '%camisa branca%'."
-)
-sql_loja, rows_loja = search_database(nl_query_loja)
+##############################################################################
+# Step E (NEW AI-Driven): Check in `loja_{numero}` for user’s request
+##############################################################################
+
+# We'll reuse the buyer_request from above (e.g. "Preciso comprar o jogo Baldurs Door.")
+item_request = buyer_request
+
+# 1) Generate the natural-language query for the specific loja_{numero} table
+prompt_for_loja = prompt_loja_chain.run({
+    "store_number": store_info["numero"],
+    "user_request": item_request
+})
+print(f"\n[PromptLoja output for 'loja_{store_info['numero']}' query]:\n{prompt_for_loja}")
+
+# 2) Use the generated text to do the actual SQL search
+sql_loja, rows_loja = search_database(prompt_for_loja)
+print("\n[SQL Generated by LLM for loja_{store_info['numero']}]:\n", sql_loja)
+print("[Rows from DB]:\n", rows_loja)
+
+# 3) Parse the results
 matching_items = []
 for r in rows_loja:
     matching_items.append({
@@ -179,33 +252,38 @@ for r in rows_loja:
         "preco": float(r[2])
     })
 
-print("\nMatching items in loja_{numero}:\n", matching_items)
-
-# Final summary
 print("\n=== FINAL SUMMARY ===")
 if matching_items:
-    print(f"Store #{store_info['numero']} (tipo='{store_info['tipo']}') sells:")
+    print(f"Loja #{store_info['numero']} (tipo='{store_info['tipo']}') vende:")
     for it in matching_items:
-        print(f"  - {it['produto']} (qtd={it['qtd']}, preco={it['preco']})")
-    print("Coordinates:", coords)
+        print(f" - {it['produto']} (qtd={it['qtd']}, preco={it['preco']})")
+    print("Coordenadas:", coords)
 else:
-    print(f"No 'camisa branca' found in loja_{store_info['numero']}.")
+    print(f"Não foi encontrado '{item_request}' em loja_{store_info['numero']}.")
 
 ##############################################################################
-# 5. (Optional) Save conversation or results
+# 6. (Optional) Save conversation/results to file
 ##############################################################################
+
 with open("conversa.txt", "w", encoding="utf-8") as file:
-    file.write("=== Buyer Request ===\n")
+    file.write("--- Buyer request ---\n")
     file.write(buyer_request + "\n\n")
 
-    file.write("=== Store Chosen ===\n")
-    file.write(sql_store + "\n")
+    file.write("--- PromptGenerator output ---\n")
+    file.write(prompt_for_lojas + "\n\n")
+
+    file.write("--- Pesquisador store query (SQL) ---\n")
+    file.write(sql_store + "\n\n")
     file.write(str(rows_store) + "\n\n")
 
-    file.write("=== Coordinates ===\n")
+    file.write("--- Coordinates ---\n")
     file.write(sql_pos + "\n")
     file.write(str(coords) + "\n\n")
 
-    file.write("=== Loja Table Query ===\n")
+    file.write("--- PromptLoja output ---\n")
+    file.write(prompt_for_loja + "\n")
+    file.write("\n--- loja_{numero} table query (SQL) ---\n")
     file.write(sql_loja + "\n")
     file.write(str(matching_items) + "\n\n")
+
+print("\n\n[Done] Conversation saved to conversa.txt")
