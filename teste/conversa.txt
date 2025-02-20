@@ -1,25 +1,21 @@
-**Comprador:** Olá! Estou procurando uma camisa branca elegante para um casamento neste fim de semana. Você tem alguma opção disponível?  
+**Comprador:** Bom dia! Estou procurando uma camisa branca elegante para um casamento neste fim de semana. Pode me mostrar algumas opções?
 
-**Vendedor:** Olá! Sim, temos várias camisas brancas. Esta aqui é uma camisa de algodão de alta qualidade, perfeita para ocasiões formais. Ela custa R$ 250.  
+**Vendedor:** Claro! Temos aqui alguns modelos de camisas brancas. Temos de algodão egípcio, que é extremamente suave e resistente, e também temos opções com mistura de seda para um toque mais sofisticado. Qual prefere?
 
-**Comprador:** Ela parece ótima, mas o preço está um pouco acima do que eu esperava. Você poderia fazer um desconto?  
+**Comprador:** Estou interessado na de algodão egípcio. Qual é o preço?
 
-**Vendedor:** Entendo, mas essa camisa é realmente de alta qualidade. Posso oferecer um desconto de 10%, o que a deixaria por R$ 225.  
+**Vendedor:** Esta camisa de algodão egípcio está por R$200. É uma das nossas melhores em termos de qualidade e conforto.
 
-**Comprador:** Agradeço a oferta, mas ainda assim está um pouco acima do meu orçamento. Se eu pagar em dinheiro, você poderia reduzir um pouco mais?  
+**Comprador:** Parece ótima, mas está um pouco acima do que planejei gastar. Há possibilidade de fazer por R$170?
 
-**Vendedor:** Se você pagar em dinheiro, posso baixar para R$ 210. É o melhor que posso fazer.  
+**Vendedor:** Entendo sua preocupação com o orçamento. Posso oferecer um desconto e fazer por R$180. Além disso, posso incluir um serviço de ajuste gratuito, para que a camisa fique perfeita em você. O que acha?
 
-**Comprador:** R$ 210 é um preço mais justo, mas eu estava pensando em algo em torno de R$ 200. Você conseguiria fazer isso?  
+**Comprador:** Agradeço a oferta do ajuste, isso realmente agrega valor. Poderia fechar em R$175 com o ajuste incluído? Assim ficaria perfeito para o meu orçamento.
 
-**Vendedor:** Hmmm, R$ 200 é um pouco apertado, mas eu realmente quero fechar essa venda. Que tal R$ 205?  
+**Vendedor:** Fechado! Vamos fazer por R$175 com o ajuste incluído. Vou preparar tudo para que você possa levar a camisa ajustada a tempo para o casamento.
 
-**Comprador:** R$ 205 parece um bom compromisso. Fechado!  
+**Comprador:** Perfeito, muito obrigado pela flexibilidade e pelo bom atendimento. Vamos proceder com a compra então.
 
-**Vendedor:** Ótimo! Vou embrulhar a camisa para você. Obrigado pela negociação!  
+**Vendedor:** Ótimo! Vou encaminhá-lo ao nosso caixa e eles cuidarão de tudo para você. Obrigado pela preferência e espero que tenha um excelente casamento!
 
-**Comprador:** Eu que agradeço! Estou ansioso para usar a camisa no casamento.  
-
-**Vendedor:** Tenho certeza de que você ficará ótimo! Aqui está a sua camisa. Tenha um ótimo casamento!  
-
-**Comprador:** Obrigado! Até mais!
+**Comprador:** Obrigado, tenho certeza de que será um dia incrível. Agradeço novamente pela ajuda!
