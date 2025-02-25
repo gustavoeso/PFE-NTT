@@ -20,6 +20,7 @@ from sqlalchemy import create_engine, text
 
 load_dotenv()
 
+
 db_uri = "postgresql://myuser:mypassword@shopping.cib0gcgyigl5.us-east-1.rds.amazonaws.com:5432/shopping"
 api_key = os.getenv("OPENAI_API_KEY")
 model_name = os.getenv("OPENAI_MODEL_NAME", "gpt-4-turbo")
