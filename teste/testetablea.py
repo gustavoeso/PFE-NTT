@@ -20,7 +20,7 @@ from sqlalchemy import create_engine, text
 
 load_dotenv()
 
-db_uri = 'postgresql://myuser:mypassword@localhost:5432/shopping'
+db_uri = "postgresql://myuser:mypassword@shopping.cib0gcgyigl5.us-east-1.rds.amazonaws.com:5432/shopping"
 api_key = os.getenv("OPENAI_API_KEY")
 model_name = os.getenv("OPENAI_MODEL_NAME", "gpt-4-turbo")
 
@@ -159,15 +159,19 @@ Você é um especialista em mapear o pedido do comprador para uma consulta na ta
 
 A tabela 'loja_{store_number}' tem colunas: 
   - produto (texto)
+  - tipo (texto)
   - qtd (inteiro)
   - preco (decimal)
 
 O comprador quer: "{user_request}"
 
+Por exemplo, se o comprador quiser uma camiseta branca, a tabela ficaria assim: "Camiseta", "Branca", 10, 25.0.
+
+
 Gere UMA LINHA de texto (em português) que especifique o que consultar nessa tabela,
 exatamente no formato:
 
-Na tabela 'loja_{store_number}', retorne produto, qtd, preco where produto ILIKE '%...%' AND qtd > 0.
+Na tabela 'loja_{store_number}', retorne produto, tipo, qtd, preco where produto ILIKE '%...%' AND qtd > 0.
 
 Use a string do "user_request" no lugar de "...".  
 Retorne SOMENTE a linha final, sem explicações adicionais.
@@ -187,7 +191,7 @@ prompt_loja_fallback = PromptTemplate(
 Não foi encontrado o item exato "{user_request}" na tabela 'loja_{store_number}' ou está sem estoque.
 Gere UMA LINHA de texto (em português), no formato:
 
-Na tabela 'loja_{store_number}', retorne produto, qtd, preco 
+Na tabela 'loja_{store_number}', retorne produto, tipo, qtd, preco 
 where qtd > 0 AND preco BETWEEN {min_price} AND {max_price} 
 ORDER BY preco ASC;
 
@@ -302,8 +306,9 @@ if not exact_match_in_stock:
     for r in rows_loja_fallback:
         recommended_items.append({
             "produto": r[0],
-            "qtd": int(r[1]),
-            "preco": float(r[2])
+            "tipo": r[1],
+            "qtd": int(r[2]),
+            "preco": float(r[3])
         })
 
     matching_items = recommended_items
