@@ -8,8 +8,8 @@ os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 
 AClient = Agent(
     name="Cliente",
-    role="Cliente de um shopping que busca por itens específicos",
-    backstory="Você é um homem de 35 anos de boa situação financeira",
+    role="Comprador de itens",
+    backstory="Será requisitado a você que encontre um produto específico dentro de um shopping",
     goal="Encontrar um presente para o aniversário de sua filha de 17 anos",
     llm="gpt-4o",
     memory=False
