@@ -1,0 +1,20 @@
+--- Buyer request ---
+Preciso comprar uma camiseta branca.
+
+--- PromptGenerator output ---
+Pesquise na tabela 'lojas' onde o 'tipo' é 'Roupas'.
+
+--- Pesquisador store query (SQL) ---
+SELECT * FROM lojas WHERE tipo = 'Roupas';
+
+[(1, 'Roupas', Decimal('100'))]
+
+--- Coordinates ---
+SELECT x, y, z FROM posicao WHERE numero = 100;
+[{'x': 10.0, 'y': 10.0, 'z': 1.0}]
+
+--- Loja exact match query ---
+Na tabela 'loja_100', retorne produto, tipo, qtd, preco where produto ILIKE '%camiseta%' AND tipo ILIKE '%branca%' AND qtd > 0.
+SELECT produto, tipo, qtd, preco FROM loja_100 WHERE produto ILIKE '%camiseta%' AND tipo ILIKE '%branca%' AND qtd > 0;
+[('Camiseta', ' Branca', 10, Decimal('12.5'))]
+

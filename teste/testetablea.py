@@ -152,7 +152,6 @@ crew = Crew(
 # 4. Additional Prompt & Chain for Searching loja_{numero}
 ##############################################################################
 
-# Main prompt for the "exact" product search in loja_{store_number}
 prompt_loja_prompt = PromptTemplate(
     input_variables=["store_number", "user_request"],
     template="""
@@ -166,18 +165,19 @@ A tabela 'loja_{store_number}' tem colunas:
 
 O comprador quer: "{user_request}"
 
-Por exemplo, se o comprador quiser uma camiseta branca, a tabela ficaria assim: "Camiseta", "Branca", 10, 25.0.
-
+Por exemplo, se o comprador quiser uma camiseta branca, a tabela ficaria assim: produto:"Camiseta", tipo:"Branca", qtd:10, preco:25.0.
 
 Gere UMA LINHA de texto (em português) que especifique o que consultar nessa tabela,
 exatamente no formato:
 
-Na tabela 'loja_{store_number}', retorne produto, tipo, qtd, preco where produto ILIKE '%...%' AND qtd > 0.
+Na tabela 'loja_{store_number}', retorne produto, tipo, qtd, preco 
+where produto ILIKE '%...%' AND tipo ILIKE '%...%' AND qtd > 0.
 
 Use a string do "user_request" no lugar de "...".  
 Retorne SOMENTE a linha final, sem explicações adicionais.
 """,
 )
+
 prompt_loja_chain = LLMChain(
     llm=llm,
     prompt=prompt_loja_prompt,
@@ -211,7 +211,7 @@ prompt_loja_fallback_chain = LLMChain(
 ##############################################################################
 
 # Step A: Buyer request
-buyer_request = "Preciso comprar o jogo de vídeo game Liga dos Comuns."
+buyer_request = "Preciso comprar uma camiseta branca."
 
 print(f"\n[Comprador diz]: '{buyer_request}'")
 
@@ -269,8 +269,9 @@ matching_items = []
 for r in rows_loja:
     matching_items.append({
         "produto": r[0],
-        "qtd": int(r[1]),
-        "preco": float(r[2])
+        "tipo": r[1],
+        "qtd": int(r[2]),
+        "preco": float(r[3])
     })
 
 # 2) If no exact matches, fallback. 
@@ -333,7 +334,9 @@ else:
 # 7. (Optional) Save conversation/results to file
 ##############################################################################
 
-with open("conversa.txt", "w", encoding="utf-8") as file:
+file_name = 'busca.txt'
+
+with open(file_name, "w", encoding="utf-8") as file:
     file.write("--- Buyer request ---\n")
     file.write(buyer_request + "\n\n")
 
@@ -359,4 +362,4 @@ with open("conversa.txt", "w", encoding="utf-8") as file:
         file.write(sql_loja_fallback + "\n")
         file.write(str(matching_items) + "\n\n")
 
-print("\nConversation and results saved to 'conversa.txt'.")
+print(f"\nConversation and results saved to {file_name}.")
