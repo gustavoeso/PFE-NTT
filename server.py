@@ -1,77 +1,73 @@
 from fastapi import FastAPI, Request
-from crewai import Agent, Crew, Task
 import uvicorn
-from agents import AClient, ASeller, AFilter, AStore_Clothes
+import os
+from langchain.chat_models import ChatOpenAI
+from langchain.memory import ConversationSummaryMemory
+from langchain.chains import ConversationChain
+from langchain.schema import SystemMessage
 
 app = FastAPI()
 
-@app.post("/request/client")
+model_name = os.getenv("MODEL_NAME", "gpt-4o-mini")
+api_key = os.getenv("OPENAI_API_KEY", "your_openai_api_key")
+
+llm = ChatOpenAI(
+    model_name=model_name,
+    openai_api_key=api_key,
+    temperature=0.3
+)
+
+memoryClient = None
+memoryGuide = None
+AClient = None
+AGuide = None
+agentsDict = {}
+CLIENT_PROMPT = "Você é um agente de IA no ecossistema de agentes. Sua função é procurar um produto específico dentro de um shopping, procurando informações sobre o mesmo através de dialogos."
+GUIDE_PROMPT = "Você é um agente de IA no ecossistema de agentes. Sua função é auxiliar clientes a encontrarem a localização de um produto específico dentro de um shopping."
+GUIDE_LOCATIONS = "A loja 1 vende roupas, a loja 2 vende eletrônicos, a loja 3 vende alimentos e a loja 4 vende livros"
+
+@app.post("/startApplication")
+async def start_application(request: Request):
+
+    global llm, memory, agent
+    agentsDict = {}
+
+    # Geração do Client
+    memoryClient = ConversationSummaryMemory(llm=llm)
+    memoryClient.chat_memory.add_message(SystemMessage(content=CLIENT_PROMPT))
+    AClient = ConversationChain(llm=llm, memory=memoryClient)
+    agentsDict["client"] = AClient
+
+    # Geração do Guide
+    memoryGuide = ConversationSummaryMemory(llm=llm)
+    memoryGuide.chat_memory.add_message(SystemMessage(content=GUIDE_PROMPT))
+    memoryGuide.chat_memory.add_message(SystemMessage(content=GUIDE_LOCATIONS))
+    AGuide = ConversationChain(llm=llm, memory=memoryGuide)
+    agentsDict["guide"] = AGuide
+    
+    return {"status": "Aplicação iniciada, memória reiniciada e função do agente definida"}
+
+@app.post("/agent")
 async def process_prompt(request: Request):
+    global agent
     data = await request.json()
     prompt = data.get("prompt", "")
-    AgentTask = Task(description = "Pergunte para a vendedora da loja onde encontrar o seguinte produto : {prompt}",
-                     agent = AClient,
-                     expected_output="Uma pergunta para a vendedora da loja")
+    agentID = data.get("agent", "")
+    agent = agentsDict[agentID]
     
     try:
-        finalCrew = Crew(agents=[AClient], tasks=[AgentTask])
-        result = finalCrew.kickoff(inputs={"prompt" : prompt})
-        answer = result.raw.strip()
+        answer = agent.run(prompt)
     except Exception as e:
         answer = f"Ocorreu um erro: {e}"
     
     return {"response": answer}
 
-@app.post("/request/seller")
-async def process_prompt(request: Request):
+@app.post("/extractNumber")
+async def extract_number(request: Request):
     data = await request.json()
-    prompt = data.get("prompt", "")
-    AgentTask = Task(description = "O cliente diz o seguinte : {prompt}",
-                     agent = ASeller,
-                     expected_output="Responda a loja que melhor atende os desejos do cliente")
-    
-    try:
-        finalCrew = Crew(agents=[ASeller], tasks=[AgentTask])
-        result = finalCrew.kickoff(inputs={"prompt" : prompt})
-        answer = result.raw.strip()
-    except Exception as e:
-        answer = f"Ocorreu um erro: {e}"
-    
-    return {"response": answer}
-
-@app.post("/request/filter")
-async def process_prompt(request: Request):
-    data = await request.json()
-    prompt = data.get("prompt", "")
-    AgentTask = Task(description = "Qual o número da loja que a vendedora respondeu nessa pergunta : {prompt}",
-                     agent = AFilter,
-                     expected_output="Apenas um número de 1 a 4, caso não exista loja correspondente retorne 0")
-    
-    try:
-        finalCrew = Crew(agents=[AFilter], tasks=[AgentTask])
-        result = finalCrew.kickoff(inputs={"prompt" : prompt})
-        answer = result.raw.strip()
-    except Exception as e:
-        answer = f"Ocorreu um erro: {e}"
-    
-    return {"response": answer}
-
-@app.post("/request/clothes")
-async def process_prompt(request: Request):
-    data = await request.json()
-    prompt = data.get("prompt", "")
-    AgentTask = Task(description = "Um cliente irá chegar te pedindo o seguinte produto : {prompt}",
-                     agent = AStore_Clothes,
-                     expected_output="Retorne ao cliente se você possui o produto em estoque e recomende 3 produtos para tentar atende-lo, caso não possua o produto redirecione-o para outra loja conhecida ou expulse-o do shopping")
-    
-    try:
-        finalCrew = Crew(agents=[AStore_Clothes], tasks=[AgentTask])
-        result = finalCrew.kickoff(inputs={"prompt" : prompt})
-        answer = result.raw.strip()
-    except Exception as e:
-        answer = f"Ocorreu um erro: {e}"
-    
-    return {"response": answer}
+    text = data.get("text", "")
+    number = "".join(filter(str.isdigit, text))
+    return {"number": number}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="localhost", port=8000)
