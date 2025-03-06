@@ -1,10 +1,8 @@
-using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.AI;
+using System.Threading.Tasks;
 
-public class Store : MonoBehaviour
+public class Guide : MonoBehaviour
 {
-    public string StoreId;
     private async void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Client"))
@@ -12,8 +10,13 @@ public class Store : MonoBehaviour
             Client clientAgent = other.GetComponent<Client>();
             if (clientAgent != null)
             {
-                await clientAgent.StartConversation("Store");
+                await clientAgent.StartConversation("Guide");
             }
         }
     }
 }
+
+
+
+
+

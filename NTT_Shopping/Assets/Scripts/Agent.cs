@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEngine.Networking;
 using System.Text;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 
 public class Agent : MonoBehaviour
 {
@@ -14,41 +13,43 @@ public class Agent : MonoBehaviour
         navMeshAgent = GetComponent<UnityEngine.AI.NavMeshAgent>();
     }
 
-    public async Task StartConversation(string dialoguePartner)
+    // Método base para iniciar uma conversa (pode ser sobrescrito)
+    public virtual Task StartConversation(string dialoguePartner)
     {
         if (navMeshAgent != null)
         {
             navMeshAgent.isStopped = true;
         }
+        return Task.CompletedTask;
     }
 
-    protected async Task<string> SendPrompt(string prompt, string agent)
+    // Envia um prompt para um agente específico na API
+    protected async Task<string> SendPrompt(string prompt, string agentId)
     {
         isRequestInProgress = true;
         prompt = prompt.Replace("\"", "");
         string jsonData = "{\"prompt\": \"" + prompt + "\"}";
         byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonData);
 
-        string path = "http://localhost:8000/request/" + agent;
+        string url = "http://localhost:8000/request/" + agentId;
 
-        using (UnityWebRequest request = new UnityWebRequest(path, "POST"))
+        using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
         {
             request.uploadHandler = new UploadHandlerRaw(bodyRaw);
             request.downloadHandler = new DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type", "application/json");
 
             var operation = request.SendWebRequest();
-
             while (!operation.isDone)
             {
-                await Task.Yield(); 
+                await Task.Yield();
             }
 
-            isRequestInProgress = false; 
+            isRequestInProgress = false;
 
             if (request.result == UnityWebRequest.Result.Success)
             {
-                return request.downloadHandler.text; 
+                return request.downloadHandler.text;
             }
             else
             {
@@ -57,6 +58,8 @@ public class Agent : MonoBehaviour
             }
         }
     }
+
+    // Extrai a resposta do JSON retornado pela API
     protected string ExtractResponse(string jsonResponse)
     {
         if (string.IsNullOrEmpty(jsonResponse))
@@ -82,6 +85,7 @@ public class ResponseData
 {
     public string response;
 }
+
 
 
 

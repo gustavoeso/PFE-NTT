@@ -1136,6 +1136,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Seller
       objectReference: {fileID: 0}
+    - target: {fileID: 121146256197742731, guid: 88709360414549048a22a7ed74a38ee4, type: 3}
+      propertyPath: m_TagString
+      value: Guide
+      objectReference: {fileID: 0}
     - target: {fileID: 7493001792496351765, guid: 88709360414549048a22a7ed74a38ee4, type: 3}
       propertyPath: m_LocalPosition.x
       value: 17.243835

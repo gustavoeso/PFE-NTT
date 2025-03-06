@@ -4,9 +4,9 @@
 TagManager:
   serializedVersion: 3
   tags:
-  - Seller
   - Client
   - Store
+  - Guide
   layers:
   - Default
   - TransparentFX
