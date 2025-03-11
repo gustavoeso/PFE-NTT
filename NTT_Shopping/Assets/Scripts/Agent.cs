@@ -37,7 +37,6 @@ public class Agent : MonoBehaviour
         // Criação do objeto e serialização para JSON.
         PromptData data = new PromptData { prompt = prompt, speaker = speaker };
         string jsonData = JsonUtility.ToJson(data);
-        Debug.Log(jsonData);
         
         // Conversão do JSON para bytes.
         byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonData);

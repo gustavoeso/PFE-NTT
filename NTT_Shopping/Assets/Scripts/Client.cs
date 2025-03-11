@@ -139,6 +139,7 @@ public class Client : Agent
         navMeshAgent.isStopped = true;
         navMeshAgent.velocity = Vector3.zero;
     }
+
 }
 
 
