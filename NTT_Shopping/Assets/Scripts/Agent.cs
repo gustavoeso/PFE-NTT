@@ -7,9 +7,11 @@ public class Agent : MonoBehaviour
 {
     protected UnityEngine.AI.NavMeshAgent navMeshAgent;
     protected bool isRequestInProgress = false;
+    protected Animator animator;
 
     protected virtual void Start()
     {
+        animator = GetComponent<Animator>();
         navMeshAgent = GetComponent<UnityEngine.AI.NavMeshAgent>();
     }
 
@@ -17,36 +19,45 @@ public class Agent : MonoBehaviour
     public virtual Task StartConversation(string dialoguePartner)
     {
         if (navMeshAgent != null)
-        {
+        {   
+            navMeshAgent.velocity  = Vector3.zero;
             navMeshAgent.isStopped = true;
         }
         return Task.CompletedTask;
     }
 
     // Envia um prompt para um agente específico na API
-    protected async Task<string> SendPrompt(string prompt, string agentId)
+    protected async Task<string> SendPrompt(string prompt, string agentId, string speaker)
     {
         isRequestInProgress = true;
+        
+        // Remoção de aspas para evitar problemas e serialização correta do prompt.
         prompt = prompt.Replace("\"", "");
-        string jsonData = "{\"prompt\": \"" + prompt + "\"}";
+        
+        // Criação do objeto e serialização para JSON.
+        PromptData data = new PromptData { prompt = prompt, speaker = speaker };
+        string jsonData = JsonUtility.ToJson(data);
+        Debug.Log(jsonData);
+        
+        // Conversão do JSON para bytes.
         byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonData);
-
+        
         string url = "http://localhost:8000/request/" + agentId;
-
+        
         using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
         {
             request.uploadHandler = new UploadHandlerRaw(bodyRaw);
             request.downloadHandler = new DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type", "application/json");
-
+        
             var operation = request.SendWebRequest();
             while (!operation.isDone)
             {
                 await Task.Yield();
             }
-
+        
             isRequestInProgress = false;
-
+        
             if (request.result == UnityWebRequest.Result.Success)
             {
                 return request.downloadHandler.text;
@@ -84,6 +95,12 @@ public class Agent : MonoBehaviour
 public class ResponseData
 {
     public string response;
+}
+
+[System.Serializable]
+public class PromptData {
+    public string prompt;
+    public string speaker;
 }
 
 

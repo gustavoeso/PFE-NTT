@@ -6,15 +6,17 @@ using UnityEngine.Networking;
 public class Client : Agent
 {
     private string requestedItem = "Bicicleta";
+    private Rigidbody rb;
+    private Vector3 moveDirection;
+    public float speed = 2.0f;
 
     protected override async void Start()
     {
         base.Start();
+        rb = GetComponent<Rigidbody>();
         
-        // Chama a API /startApplication no início da aplicação.
         await CallStartApplication();
 
-        // Procura pelo objeto com tag "Guide" e define sua posição como destino inicial.
         GameObject guide = GameObject.FindGameObjectWithTag("Guide");
         if (guide != null)
         {
@@ -23,7 +25,19 @@ public class Client : Agent
         }
     }
 
-    // Método auxiliar para chamar a API /startApplication.
+    void Update()
+    {
+        float speed = navMeshAgent.velocity.magnitude;
+        animator.SetFloat("Speed", speed);
+
+        if (navMeshAgent.velocity.magnitude > 0.1f)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(navMeshAgent.velocity.normalized);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 10f);
+        }
+
+    }
+
     private async Task CallStartApplication()
     {
         string url = "http://localhost:8000/startApplication";
@@ -60,42 +74,41 @@ public class Client : Agent
 
         if (dialoguePartner == "Guide")
         {
-            string initialPrompt = "Formalize uma pergunta sobre onde encontrar o produto desejado : " + requestedItem;
-            string clientResponse = await SendPrompt(initialPrompt, "client");
+            string initialPrompt = "Inicie o diálogo com um guia do shopping buscando pelo seguinte produto " + requestedItem;
+            string clientResponse = await SendPrompt(initialPrompt, "client", "client");
             string formattedResponse = ExtractResponse(clientResponse);
             Debug.Log("Pergunta do cliente: " + formattedResponse);
 
-            // 2) Resposta enviada ao agente "seller"
-            string sellerResponse = await SendPrompt(formattedResponse, "guide");
+            string sellerResponse = await SendPrompt(formattedResponse, "guide", "client");
             formattedResponse = ExtractResponse(sellerResponse);
             Debug.Log("Resposta do vendedor: " + formattedResponse);
 
-            // 3) Filtro: envia ao agente "filter" para identificar a loja correta
-            string filteredStoreResponse = await SendPrompt(formattedResponse, "filter");
-            formattedResponse = ExtractResponse(filteredStoreResponse);
-            Debug.Log("Loja filtrada: " + formattedResponse);
+            string storeNumber = ExtractFirstNumber(formattedResponse);
+            Debug.Log("Número da loja extraído: " + storeNumber);
 
-            navMeshAgent.isStopped = false;
-            Store targetStore = FindStore(formattedResponse);
+            Store targetStore = FindStore(storeNumber);
             if (targetStore != null)
             {
-                navMeshAgent.SetDestination(targetStore.transform.position);
+                Vector3 storePosition = targetStore.transform.position;
+
+                // **Garante que o agente não está parado antes de definir o destino**
+                navMeshAgent.isStopped = false;
+                navMeshAgent.speed = speed;
+                navMeshAgent.SetDestination(storePosition);
+
+                // **Adiciona uma pequena margem para evitar bloqueios**
+                if (navMeshAgent.remainingDistance <= navMeshAgent.stoppingDistance + 0.1f)
+                {
+                    StopImmediately();
+                }
             }
             else
             {
                 Debug.LogError("Loja não encontrada para o ID: " + formattedResponse);
             }
         }
-        else if (dialoguePartner == "Store")
-        {
-            // Em diálogo com a loja, utiliza o agente "clothes"
-            string storeResponse = await SendPrompt(requestedItem, "clothes");
-            string formattedResponse = ExtractResponse(storeResponse);
-            Debug.Log("Resposta da Loja: " + formattedResponse);
-        }
     }
 
-    // Busca um objeto do tipo Store com o ID correspondente
     protected Store FindStore(string storeID)
     {
         Store[] stores = Object.FindObjectsByType<Store>(FindObjectsSortMode.None);
@@ -107,6 +120,24 @@ public class Client : Agent
             }
         }
         return null;
+    }
+
+    private string ExtractFirstNumber(string response)
+    {
+        foreach (char c in response)
+        {
+            if (char.IsDigit(c))
+            {
+                return c.ToString();
+            }
+        }
+        return "";
+    }
+
+    public void StopImmediately()
+    {
+        navMeshAgent.isStopped = true;
+        navMeshAgent.velocity = Vector3.zero;
     }
 }
 
