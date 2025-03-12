@@ -78,10 +78,12 @@ public class Client : Agent
             string clientResponse = await SendPrompt(initialPrompt, "client", "client");
             string formattedResponse = ExtractResponse(clientResponse);
             Debug.Log("Pergunta do cliente: " + formattedResponse);
+            await TTSManager.Instance.SpeakAsync(clientResponse, TTSManager.Instance.voiceClient);
 
             string sellerResponse = await SendPrompt(formattedResponse, "guide", "client");
             formattedResponse = ExtractResponse(sellerResponse);
             Debug.Log("Resposta do vendedor: " + formattedResponse);
+            await TTSManager.Instance.SpeakAsync(sellerResponse, TTSManager.Instance.voiceGuide);
 
             string storeNumber = ExtractFirstNumber(formattedResponse);
             Debug.Log("Número da loja extraído: " + storeNumber);

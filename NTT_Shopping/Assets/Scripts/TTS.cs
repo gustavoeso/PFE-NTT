@@ -1,72 +1,95 @@
 using UnityEngine;
 using UnityEngine.Networking;
-using System.Collections;
-using System.IO;
 using System;
+using System.IO;
+using System.Threading.Tasks;
 
-public class OpenAITTS : MonoBehaviour
+public class TTSManager : MonoBehaviour
 {
-    private string apiKey;
+    public static TTSManager Instance;
 
-    void Start()
+    [Header("Voices disponíveis")]
+    public string voiceClient = "shimmer";
+    public string voiceGuide = "alloy";
+
+    [Header("Config da API")]
+    public string openAIEndpoint = "https://api.openai.com/v1/audio/speech";
+    public string apiKey;
+
+    private void Awake()
     {
-        // Carrega as variáveis do .env antes de pegar a API Key
-        EnvLoader.LoadEnv();
+        if (Instance == null) Instance = this;
+        else Destroy(gameObject);
 
-        // Agora a chave pode ser acessada pelo Environment
-        apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+        EnvLoader.LoadEnv();
+                apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+        if (!string.IsNullOrEmpty(apiKey))
+        {
+            apiKey = apiKey.Trim();
+        }
 
         if (string.IsNullOrEmpty(apiKey))
         {
-            Debug.LogError("Erro: A variável de ambiente OPENAI_API_KEY não foi encontrada!");
+            Debug.LogError("Nenhuma API Key foi encontrada! Verifique suas variáveis de ambiente ou insira a chave no Inspector.");
             return;
         }
-
-        // Teste inicial ao iniciar a cena
-        StartCoroutine(GenerateSpeech("Olá, mundo! Este é um teste de voz da OpenAI."));
     }
 
-    public IEnumerator GenerateSpeech(string text)
+    public async Task SpeakAsync(string text, string voice)
     {
-        string url = "https://api.openai.com/v1/audio/speech";
-        string voiceModel = "alloy"; // Modelos disponíveis: alloy, echo, fable, onyx, nova, shimmer
-        string tempFilePath = Path.Combine(Application.persistentDataPath, "speech.mp3");
+        var tempFilePath = await GenerateSpeechFile(text, voice);
 
-        // Criando JSON da requisição
-        string jsonData = $"{{\"model\":\"tts-1\",\"input\":\"{text}\",\"voice\":\"{voiceModel}\"}}";
+        if (!string.IsNullOrEmpty(tempFilePath))
+        {
+            await PlayAudioAsync(tempFilePath);
+        }
+    }
 
-        using (UnityWebRequest request = UnityWebRequest.PostWwwForm(url, ""))
+    private async Task<string> GenerateSpeechFile(string text, string voiceModel)
+    {
+        var model = "tts-1";
+        string mp3Path = Path.Combine(Application.persistentDataPath, "ttsSpeech.mp3");
+
+        var requestData = new TTSRequest(model, text, voiceModel);
+        var jsonData = JsonUtility.ToJson(requestData);
+
+        using (var request = new UnityWebRequest(openAIEndpoint, "POST"))
         {
             byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
             request.uploadHandler = new UploadHandlerRaw(bodyRaw);
             request.downloadHandler = new DownloadHandlerBuffer();
-            request.SetRequestHeader("Content-Type", "application/json");
-            request.SetRequestHeader("Authorization", "Bearer " + apiKey);
 
-            yield return request.SendWebRequest();
+            request.SetRequestHeader("Content-Type", "application/json");
+            request.SetRequestHeader("Authorization", $"Bearer {apiKey}");
+
+            var operation = request.SendWebRequest();
+            while (!operation.isDone)
+            {
+                await Task.Yield();
+            }
 
             if (request.result == UnityWebRequest.Result.Success)
             {
-                File.WriteAllBytes(tempFilePath, request.downloadHandler.data);
-                PlayAudio(tempFilePath);
+                File.WriteAllBytes(mp3Path, request.downloadHandler.data);
+                return mp3Path;
             }
             else
             {
-                Debug.LogError("Erro ao acessar OpenAI API: " + request.error);
+                Debug.LogError($"TTS falhou: {request.error}\n{request.downloadHandler.text}");
+                return null;
             }
         }
     }
 
-    private void PlayAudio(string filePath)
-    {
-        StartCoroutine(LoadAndPlayAudio(filePath));
-    }
-
-    private IEnumerator LoadAndPlayAudio(string filePath)
+    private async Task PlayAudioAsync(string filePath)
     {
         using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip("file://" + filePath, AudioType.MPEG))
         {
-            yield return www.SendWebRequest();
+            var operation = www.SendWebRequest();
+            while (!operation.isDone)
+            {
+                await Task.Yield();
+            }
 
             if (www.result == UnityWebRequest.Result.Success)
             {
@@ -74,11 +97,38 @@ public class OpenAITTS : MonoBehaviour
                 AudioSource audioSource = gameObject.AddComponent<AudioSource>();
                 audioSource.clip = clip;
                 audioSource.Play();
+
+                while (audioSource.isPlaying)
+                {
+                    await Task.Yield();
+                }
+
+                Destroy(audioSource);
+                Destroy(clip);
             }
             else
             {
-                Debug.LogError("Erro ao carregar áudio: " + www.error);
+                Debug.LogError($"Erro ao carregar áudio para reprodução: {www.error}");
             }
         }
     }
+
+    [Serializable]
+    public class TTSRequest
+    {
+        public string model;
+        public string input;
+        public string voice;
+
+        public TTSRequest(string model, string input, string voice)
+        {
+            this.model = model;
+            this.input = input;
+            this.voice = voice;
+        }
+    }
 }
+
+
+
+
