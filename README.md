@@ -51,7 +51,8 @@ Para a construção e gerenciamento dos agentes, utilizamos as seguintes tecnolo
 - **OpenAI GPT** – Modelo de linguagem usado para gerar diálogos realistas e coerentes entre os agentes.  
 - **Text-to-Speech (TTS) da OpenAI** – Implementação de síntese de voz para que os agentes possam falar suas respostas em tempo real, aumentando a imersão da experiência.  
 - **Unity 3D** – Motor gráfico utilizado para criar o ambiente tridimensional e permitir a movimentação dos agentes dentro do shopping virtual.  
-- **Banco de Dados de Estoque** – Um repositório que armazena informações sobre os produtos disponíveis em cada loja, permitindo que os vendedores ofereçam opções reais ao Buyer.  
+- **Banco de Dados de Estoque** – Um repositório que armazena informações sobre os produtos disponíveis em cada loja, permitindo que os vendedores ofereçam opções reais ao Buyer.
+- **Banco de Dados na AWS** – O sistema utiliza uma base de dados hospedada na AWS para armazenar as informações de estoque de cada loja, permitindo que os agentes vendedores consultem os produtos disponíveis em tempo real.
 
 ---
 
