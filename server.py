@@ -72,6 +72,23 @@ Agora responda como guia:
 Exemplo correto: "Você pode encontrar esse item na Loja 1, a Loja de Roupas."
 """
 
+store_system_template = """
+Você é o vendedor de uma loja que deve auxiliar o comprador a encontrar o produto desejado em sua loja, dentro de um estoque inventado.
+Não se identifique como IA.
+
+Histórico da conversa até agora:
+{history}
+"""
+
+store_human_template = """
+A última resposta recebida foi:
+{last_response}
+
+Agora responda como vendedor:
+- Qual produto da loja melhor atende os requisitos do cliente.
+- Ofereça apenas um produto, deixando para decisão do cliente se ele irá ou não querer.
+"""
+
 @app.post("/startApplication")
 async def start_application():
     agentsDict.clear()
@@ -95,6 +112,16 @@ async def start_application():
     agentsDict["guide"] = guide_chain
     memoryDict["guide"] = guide_memory
 
+    store_memory = ConversationBufferMemory(memory_key="history", return_messages=True)
+    store_prompt = ChatPromptTemplate.from_messages([
+        SystemMessagePromptTemplate.from_template(store_system_template),
+        HumanMessagePromptTemplate.from_template(store_human_template)
+    ])
+    store_chain = LLMChain(llm=llm, prompt=store_prompt, memory=store_memory)
+
+    agentsDict["store"] = store_chain
+    memoryDict["store"] = store_memory
+
     return {"status": "Aplicação iniciada corretamente."}
 
 @app.post("/request/{agent_id}")
@@ -107,9 +134,9 @@ async def process_prompt(agent_id: str, request: Request):
         return {"response": f"Agente '{agent_id}' não encontrado."}
 
     if speaker == "client":
-        answer = agentsDict[agent_id].run(last_response=prompt)
-    else:
         answer = agentsDict["client"].run(last_response=prompt)
+    else:
+        answer = agentsDict[agent_id].run(last_response=prompt)
 
     memoryDict["client"].save_context({"input": prompt}, {"output": answer})
     if agent_id != "client":
