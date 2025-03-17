@@ -211,7 +211,7 @@ prompt_loja_fallback_chain = LLMChain(
 ##############################################################################
 
 # Step A: Buyer request
-buyer_request = "Preciso comprar uma camiseta branca."
+buyer_request = "Preciso comprar o jogo de vídeo game FIFA."
 
 print(f"\n[Comprador diz]: '{buyer_request}'")
 

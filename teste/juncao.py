@@ -5,10 +5,8 @@ from dotenv import load_dotenv
 # 1) ENV Setup + LLM
 #####################################################################
 import openai
-# If you are using "langchain_community" for ChatOpenAI:
 from langchain_community.chat_models import ChatOpenAI
-# Otherwise from langchain_openai import ChatOpenAI
-# or from langchain.chat_models import ChatOpenAI
+
 
 from langchain.prompts import (
     ChatPromptTemplate,
@@ -19,7 +17,6 @@ from langchain.prompts import (
 from langchain.chains import LLMChain
 from langchain.memory import ConversationBufferMemory
 
-# For DB
 from sqlalchemy import create_engine, text
 from langchain_experimental.sql import SQLDatabaseChain
 from langchain_community.utilities import SQLDatabase
@@ -41,14 +38,13 @@ database = SQLDatabase(engine)
 #####################################################################
 # 3) Base LLM for SQL & Revised Custom Prompt (with valid store numbers)
 #####################################################################
+
 llm_for_sql = ChatOpenAI(
     model_name=model_name,
     openai_api_key=api_key,
     temperature=0.3
 )
 
-# Notice double braces around {numero} so the LLM doesn't treat it as a variable
-# Also mention that store numbers are only 100, 105, 110, 115, 120
 CUSTOM_SQL_PROMPT = """
 You are an expert SQL developer. The database schema is as follows:
 
