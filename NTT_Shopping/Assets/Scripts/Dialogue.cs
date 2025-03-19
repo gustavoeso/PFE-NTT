@@ -76,9 +76,6 @@ public class Dialogue : MonoBehaviour
         Color activeColor = Color.white;
         Color inactiveColor = Color.gray;
 
-        Color activeTextColor = Color.black;
-        Color inactiveTextColor = Color.gray;
-
         void UpdateCharacter(GameObject character, bool isActive)
         {
             if (character == null)
@@ -103,15 +100,15 @@ public class Dialogue : MonoBehaviour
 
         if (isLeftCharacterTalking)
         {
-            leftName.color = activeTextColor;
-            rightName.color = new Color(inactiveTextColor.r, inactiveTextColor.g, inactiveTextColor.b, 0.5f);
+            leftName.color = activeColor;
+            rightName.color = new Color(inactiveColor.r, inactiveColor.g, inactiveColor.b, 0.5f);
             rightName.fontStyle = TMPro.FontStyles.Normal;
             leftName.fontStyle = TMPro.FontStyles.Bold;
         }
         else
         {
-            rightName.color = activeTextColor;
-            leftName.color = new Color(inactiveTextColor.r, inactiveTextColor.g, inactiveTextColor.b, 0.5f);
+            rightName.color = activeColor;
+            leftName.color = new Color(inactiveColor.r, inactiveColor.g, inactiveColor.b, 0.5f);
             rightName.fontStyle = TMPro.FontStyles.Bold;
             leftName.fontStyle = TMPro.FontStyles.Normal;
         }

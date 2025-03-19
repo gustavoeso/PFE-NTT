@@ -120,8 +120,8 @@ MonoBehaviour:
     y: 0
     width: 290.4
     height: 447.2
-  m_MinSize: {x: 200, y: 200}
-  m_MaxSize: {x: 4000, y: 4000}
+  m_MinSize: {x: 201, y: 226}
+  m_MaxSize: {x: 4001, y: 4026}
   m_ActualView: {fileID: 18}
   m_Panes:
   - {fileID: 18}
@@ -674,7 +674,7 @@ MonoBehaviour:
       height: 1728
     m_MinimalGUI: 1
   m_defaultScale: 0.23159723
-  m_LastWindowPixelSize: {x: 1089.5, y: 526.5}
+  m_LastWindowPixelSize: {x: 871.6, y: 421.2}
   m_ClearInEditMode: 1
   m_NoCameraWarning: 1
   m_LowResolutionForAspectRatios: 00000000000000000000
@@ -855,8 +855,8 @@ MonoBehaviour:
     m_TextWithWhitespace: "Inspector\u200B"
   m_Pos:
     serializedVersion: 2
-    x: 1164
-    y: 79.200005
+    x: 1165
+    y: 24
     width: 371
     height: 690.8
   m_SerializedDataModeController:
@@ -905,7 +905,7 @@ MonoBehaviour:
   m_Pos:
     serializedVersion: 2
     x: 0
-    y: 79.200005
+    y: 24
     width: 289.4
     height: 421.2
   m_SerializedDataModeController:
@@ -922,7 +922,7 @@ MonoBehaviour:
   m_SceneHierarchy:
     m_TreeViewState:
       scrollPos: {x: 0, y: 0}
-      m_SelectedIDs: 24a40000
+      m_SelectedIDs: 
       m_LastClickedID: 0
       m_ExpandedIDs: 20fbffff
       m_RenameOverlay:
@@ -970,8 +970,8 @@ MonoBehaviour:
     m_TextWithWhitespace: "Scene\u200B"
   m_Pos:
     serializedVersion: 2
-    x: 290.4
-    y: 79.200005
+    x: 291.4
+    y: 24
     width: 871.6
     height: 421.2
   m_SerializedDataModeController:
@@ -1607,7 +1607,7 @@ MonoBehaviour:
   m_Pos:
     serializedVersion: 2
     x: 0
-    y: 526.4
+    y: 471.2
     width: 1163
     height: 243.59998
   m_SerializedDataModeController:
