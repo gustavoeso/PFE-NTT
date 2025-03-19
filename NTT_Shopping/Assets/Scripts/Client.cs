@@ -5,7 +5,7 @@ using UnityEngine.Networking;
 
 public class Client : Agent
 {
-    private string requestedItem = "Livro de Rituais Sagrados de Cthulhu";
+    private string requestedItem = "Jogo de Tabuleiro Monopoly";
     private Rigidbody rb;
     private Vector3 moveDirection;
     public float speed = 2.0f;
@@ -73,17 +73,21 @@ public class Client : Agent
         }
 
         if (dialoguePartner == "Guide")
-        {
+        {   
             string initialPrompt = "Inicie o diálogo com um guia do shopping buscando pelo seguinte produto " + requestedItem;
             string clientResponse = await SendPrompt(initialPrompt, "guide", "client");
             string formattedResponse = ExtractResponse(clientResponse);
+            Dialogue.Instance.InitializeDialogue("client", "guide");
+            Dialogue.Instance.StartDialogue(formattedResponse, true);
             Debug.Log("Pergunta do cliente: " + formattedResponse);
             await TTSManager.Instance.SpeakAsync(formattedResponse, TTSManager.Instance.voiceClient);
 
             string sellerResponse = await SendPrompt(formattedResponse, "guide", "guide");
             formattedResponse = ExtractResponse(sellerResponse);
+            Dialogue.Instance.StartDialogue(formattedResponse, false);
             Debug.Log("Resposta do vendedor: " + formattedResponse);
             await TTSManager.Instance.SpeakAsync(formattedResponse, TTSManager.Instance.voiceGuide);
+            Dialogue.Instance.CloseDialogue();
 
             string storeNumber = ExtractFirstNumber(formattedResponse);
             Debug.Log("Número da loja extraído: " + storeNumber);
@@ -114,19 +118,24 @@ public class Client : Agent
             string initialPrompt = "{Você ja chegou na loja especificada, agora dirija uma pergunta para iniciar o dialogo com o atendente pedindo pelo produto} " + requestedItem;
             string clientResponse = await SendPrompt(initialPrompt, "store", "client");
             string formattedResponse = ExtractResponse(clientResponse);
+            Dialogue.Instance.InitializeDialogue("client", "seller");
+            Dialogue.Instance.StartDialogue(formattedResponse, true);
             Debug.Log("Pergunta do cliente: " + formattedResponse);
             await TTSManager.Instance.SpeakAsync(formattedResponse, TTSManager.Instance.voiceClient);
 
             string sellerResponse = await SendPrompt(formattedResponse, "store", "store");
             formattedResponse = ExtractResponse(sellerResponse);
+            Dialogue.Instance.StartDialogue(formattedResponse, false);
             Debug.Log("Resposta do vendedor: " + formattedResponse);
             await TTSManager.Instance.SpeakAsync(formattedResponse, TTSManager.Instance.voiceGuide);
 
             initialPrompt = "{Decida se quer ou não comprar o produto oferecido na seguinte resposta}" + formattedResponse;
             clientResponse = await SendPrompt(initialPrompt, "store", "client");
             formattedResponse = ExtractResponse(clientResponse);
+            Dialogue.Instance.StartDialogue(formattedResponse, true);
             Debug.Log("Pergunta do cliente: " + formattedResponse);
             await TTSManager.Instance.SpeakAsync(formattedResponse, TTSManager.Instance.voiceClient);
+            Dialogue.Instance.CloseDialogue();
 
             Exit targetExit = FindExit();
             Vector3 exitPosition = targetExit.transform.position;
@@ -135,7 +144,6 @@ public class Client : Agent
             navMeshAgent.speed = speed;
             navMeshAgent.SetDestination(exitPosition);
 
-            // **Adiciona uma pequena margem para evitar bloqueios**
             if (navMeshAgent.remainingDistance <= navMeshAgent.stoppingDistance + 0.1f)
             {
                 StopImmediately();
