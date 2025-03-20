@@ -9,8 +9,10 @@ public class Guide : MonoBehaviour
         {
             Client clientAgent = other.GetComponent<Client>();
             if (clientAgent != null)
-            {
-                await clientAgent.StartConversation("Guide");
+            {   
+                if (clientAgent.canCollide){
+                    await clientAgent.StartConversation("Guide");
+                }
             }
         }
     }

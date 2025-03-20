@@ -9,6 +9,7 @@ public class Client : Agent
     private Rigidbody rb;
     private Vector3 moveDirection;
     public float speed = 2.0f;
+    public bool canCollide = true;
 
     protected override async void Start()
     {
@@ -64,8 +65,10 @@ public class Client : Agent
     }
 
     public override async Task StartConversation(string dialoguePartner)
-    {
+    {   
         await base.StartConversation(dialoguePartner);
+        Debug.Log("Iniciando conversa com: " + dialoguePartner);
+        canCollide = false;
 
         if (isRequestInProgress)
         {
@@ -129,11 +132,21 @@ public class Client : Agent
             Debug.Log("Resposta do vendedor: " + formattedResponse);
             await TTSManager.Instance.SpeakAsync(formattedResponse, TTSManager.Instance.voiceGuide);
 
-            initialPrompt = "{Decida se quer ou não comprar o produto oferecido na seguinte resposta}" + formattedResponse;
-            clientResponse = await SendPrompt(initialPrompt, "store", "client");
+            clientResponse = await SendPrompt("Pergunte ao usúario se ele deve ou não aceitar a oferta", "client", "client");
             formattedResponse = ExtractResponse(clientResponse);
+            bool userDecision = await PurchaseDecisionUI.Instance.GetUserDecisionAsync(formattedResponse);
+
+            if (userDecision)
+            {
+                clientResponse = await SendPrompt("Aceite a oferta do vendedor e se despeça", "store", "client");
+                formattedResponse = ExtractResponse(clientResponse);
+            }
+            else
+            {
+                clientResponse = await SendPrompt("Negue a oferta do vendedor e se despeça", "store", "client");
+                formattedResponse = ExtractResponse(clientResponse);
+            }
             Dialogue.Instance.StartDialogue(formattedResponse, true);
-            Debug.Log("Pergunta do cliente: " + formattedResponse);
             await TTSManager.Instance.SpeakAsync(formattedResponse, TTSManager.Instance.voiceClient);
             Dialogue.Instance.CloseDialogue();
 
@@ -149,6 +162,8 @@ public class Client : Agent
                 StopImmediately();
             }
         }
+
+        canCollide = true;
     }
 
     protected Store FindStore(string storeID)

@@ -12,7 +12,9 @@ public class Store : MonoBehaviour
             Client clientAgent = other.GetComponent<Client>();
             if (clientAgent != null)
             {
-                await clientAgent.StartConversation("Store");
+                if (clientAgent.canCollide){
+                    await clientAgent.StartConversation("Store");
+                }
             }
         }
     }
