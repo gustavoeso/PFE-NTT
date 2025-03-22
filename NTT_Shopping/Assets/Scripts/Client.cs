@@ -7,6 +7,7 @@ public class Client : Agent
 {
     private Rigidbody rb;
     public float speed = 2.0f;
+    public bool canCollide = true;
 
     // The item we want
     private string requestedItem = "Camiseta branca";
@@ -88,8 +89,10 @@ public class Client : Agent
     }
 
     public override async Task StartConversation(string dialoguePartner)
-    {
+    {   
         await base.StartConversation(dialoguePartner);
+        Debug.Log("Iniciando conversa com: " + dialoguePartner);
+        canCollide = false;
 
         if (isRequestInProgress) return; // Already making a request
 
@@ -135,8 +138,34 @@ public class Client : Agent
         {
             Debug.Log("[Client] Starting multi-turn conversation with the Store.");
 
+<<<<<<< HEAD
             // 1) We do the turn-based loop
             await RunStoreConversationLoop();
+=======
+            string sellerResponse = await SendPrompt(formattedResponse, "store", "store");
+            formattedResponse = ExtractResponse(sellerResponse);
+            Dialogue.Instance.StartDialogue(formattedResponse, false);
+            Debug.Log("Resposta do vendedor: " + formattedResponse);
+            await TTSManager.Instance.SpeakAsync(formattedResponse, TTSManager.Instance.voiceGuide);
+
+            clientResponse = await SendPrompt("Pergunte ao usúario se ele deve ou não aceitar a oferta", "client", "client");
+            formattedResponse = ExtractResponse(clientResponse);
+            bool userDecision = await PurchaseDecisionUI.Instance.GetUserDecisionAsync(formattedResponse);
+
+            if (userDecision)
+            {
+                clientResponse = await SendPrompt("Aceite a oferta do vendedor e se despeça", "store", "client");
+                formattedResponse = ExtractResponse(clientResponse);
+            }
+            else
+            {
+                clientResponse = await SendPrompt("Negue a oferta do vendedor e se despeça", "store", "client");
+                formattedResponse = ExtractResponse(clientResponse);
+            }
+            Dialogue.Instance.StartDialogue(formattedResponse, true);
+            await TTSManager.Instance.SpeakAsync(formattedResponse, TTSManager.Instance.voiceClient);
+            Dialogue.Instance.CloseDialogue();
+>>>>>>> 0149944923e8477417c7a2ff25f7a6a028ea750f
 
             // 2) After the loop finishes (buyer decided or we hit max turns),
             //    let's walk to the exit
@@ -154,6 +183,8 @@ public class Client : Agent
                 Debug.Log("[Client] Nenhuma saída encontrada na cena.");
             }
         }
+
+        canCollide = true;
     }
 
     /// <summary>

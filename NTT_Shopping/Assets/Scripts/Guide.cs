@@ -18,9 +18,16 @@ public class Guide : MonoBehaviour
 
             Client clientAgent = other.GetComponent<Client>();
             if (clientAgent != null)
+<<<<<<< HEAD
             {
                 Debug.Log("[Guide] Starting conversation with client...");
                 await clientAgent.StartConversation("Guide");
+=======
+            {   
+                if (clientAgent.canCollide){
+                    await clientAgent.StartConversation("Guide");
+                }
+>>>>>>> 0149944923e8477417c7a2ff25f7a6a028ea750f
             }
         }
     }
