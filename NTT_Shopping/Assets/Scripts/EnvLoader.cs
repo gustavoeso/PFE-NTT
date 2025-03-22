@@ -1,6 +1,6 @@
+using UnityEngine;
 using System;
 using System.IO;
-using UnityEngine;
 
 public static class EnvLoader
 {
@@ -28,4 +28,3 @@ public static class EnvLoader
         Debug.Log("Variáveis do .env carregadas!");
     }
 }
-

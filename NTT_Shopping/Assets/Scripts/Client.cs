@@ -5,37 +5,61 @@ using UnityEngine.Networking;
 
 public class Client : Agent
 {
-    private string requestedItem = "Jogo de Tabuleiro Monopoly";
     private Rigidbody rb;
-    private Vector3 moveDirection;
     public float speed = 2.0f;
+
+    // The item we want
+    private string requestedItem = "Camiseta branca";
+
+    // Booleans to ensure we do things once
+    private bool hasAskedGuide    = false;
+    private bool onWayToStore     = false;
+    private bool hasTalkedToStore = false;
+
+    // Store reference
+    private Store targetStore = null;
 
     protected override async void Start()
     {
         base.Start();
         rb = GetComponent<Rigidbody>();
-        
+
+        // 1) Call /startApplication to initialize server
         await CallStartApplication();
 
+        // 2) (Optional) Move near the guide so we can trigger OnTriggerEnter in Guide
         GameObject guide = GameObject.FindGameObjectWithTag("Guide");
-        if (guide != null)
+        if (guide != null && navMeshAgent != null)
         {
-            Vector3 guidePosition = guide.transform.position;
-            navMeshAgent.SetDestination(guidePosition);
+            navMeshAgent.isStopped = false;
+            navMeshAgent.speed = speed;
+            navMeshAgent.SetDestination(guide.transform.position);
         }
     }
 
     void Update()
     {
-        float speed = navMeshAgent.velocity.magnitude;
-        animator.SetFloat("Speed", speed);
+        float curSpeed = navMeshAgent.velocity.magnitude;
+        animator.SetFloat("Speed", curSpeed);
 
-        if (navMeshAgent.velocity.magnitude > 0.1f)
+        if (curSpeed > 0.1f)
         {
             Quaternion targetRotation = Quaternion.LookRotation(navMeshAgent.velocity.normalized);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 10f);
         }
 
+        // If we're on the way to the store, check if we've arrived
+        if (onWayToStore && targetStore != null && !hasTalkedToStore)
+        {
+            float distance = Vector3.Distance(transform.position, targetStore.transform.position);
+            if (distance < 1.5f)  // "Close enough" threshold
+            {
+                onWayToStore = false;
+                hasTalkedToStore = true;
+                // Start the store conversation automatically
+                _ = StartConversation("Store");
+            }
+        }
     }
 
     private async Task CallStartApplication()
@@ -67,88 +91,118 @@ public class Client : Agent
     {
         await base.StartConversation(dialoguePartner);
 
-        if (isRequestInProgress)
-        {
-            return;
-        }
+        if (isRequestInProgress) return; // Already making a request
 
         if (dialoguePartner == "Guide")
-        {   
-            string initialPrompt = "Inicie o diálogo com um guia do shopping buscando pelo seguinte produto " + requestedItem;
-            string clientResponse = await SendPrompt(initialPrompt, "guide", "client");
-            string formattedResponse = ExtractResponse(clientResponse);
-            Dialogue.Instance.InitializeDialogue("client", "guide");
-            Dialogue.Instance.StartDialogue(formattedResponse, true);
-            Debug.Log("Pergunta do cliente: " + formattedResponse);
-            await TTSManager.Instance.SpeakAsync(formattedResponse, TTSManager.Instance.voiceClient);
+        {
+            // Only do this once
+            if (hasAskedGuide)
+            {
+                Debug.Log("[Client] Já falei com o Guide. Ignorando.");
+                return;
+            }
+            hasAskedGuide = true;
 
-            string sellerResponse = await SendPrompt(formattedResponse, "guide", "guide");
-            formattedResponse = ExtractResponse(sellerResponse);
-            Dialogue.Instance.StartDialogue(formattedResponse, false);
-            Debug.Log("Resposta do vendedor: " + formattedResponse);
-            await TTSManager.Instance.SpeakAsync(formattedResponse, TTSManager.Instance.voiceGuide);
-            Dialogue.Instance.CloseDialogue();
+            Debug.Log($"[Client] Asking Guide about item '{requestedItem}'");
 
-            string storeNumber = ExtractFirstNumber(formattedResponse);
-            Debug.Log("Número da loja extraído: " + storeNumber);
+            // 1) Ask the "guide" for the store number / position
+            string prompt         = "Estou procurando o produto: " + requestedItem;
+            string guideJson      = await SendPrompt(prompt, "guide", "client");
+            string guideAnswer    = ExtractResponse(guideJson);
 
-            Store targetStore = FindStore(storeNumber);
+            Debug.Log("[Client] Guide responded => " + guideAnswer);
+
+            // Let’s parse the store number from the text
+            string storeNumber = ExtractFirstNumber(guideAnswer);
+            Debug.Log("[Client] Store number extracted => " + storeNumber);
+
+            // Move to that store if it exists in the scene
+            targetStore = FindStore(storeNumber);
             if (targetStore != null)
             {
                 Vector3 storePosition = targetStore.transform.position;
-
-                // **Garante que o agente não está parado antes de definir o destino**
                 navMeshAgent.isStopped = false;
                 navMeshAgent.speed = speed;
                 navMeshAgent.SetDestination(storePosition);
-
-                // **Adiciona uma pequena margem para evitar bloqueios**
-                if (navMeshAgent.remainingDistance <= navMeshAgent.stoppingDistance + 0.1f)
-                {
-                    StopImmediately();
-                }
+                onWayToStore = true;
             }
             else
             {
-                Debug.LogError("Loja não encontrada para o ID: " + formattedResponse);
+                Debug.LogWarning("Loja não encontrada no Unity scene para o ID: " + storeNumber);
             }
         }
-        if (dialoguePartner == "Store")
+        else if (dialoguePartner == "Store")
         {
-            string initialPrompt = "{Você ja chegou na loja especificada, agora dirija uma pergunta para iniciar o dialogo com o atendente pedindo pelo produto} " + requestedItem;
-            string clientResponse = await SendPrompt(initialPrompt, "store", "client");
-            string formattedResponse = ExtractResponse(clientResponse);
-            Dialogue.Instance.InitializeDialogue("client", "seller");
-            Dialogue.Instance.StartDialogue(formattedResponse, true);
-            Debug.Log("Pergunta do cliente: " + formattedResponse);
-            await TTSManager.Instance.SpeakAsync(formattedResponse, TTSManager.Instance.voiceClient);
+            Debug.Log("[Client] Starting multi-turn conversation with the Store.");
 
-            string sellerResponse = await SendPrompt(formattedResponse, "store", "store");
-            formattedResponse = ExtractResponse(sellerResponse);
-            Dialogue.Instance.StartDialogue(formattedResponse, false);
-            Debug.Log("Resposta do vendedor: " + formattedResponse);
-            await TTSManager.Instance.SpeakAsync(formattedResponse, TTSManager.Instance.voiceGuide);
+            // 1) We do the turn-based loop
+            await RunStoreConversationLoop();
 
-            initialPrompt = "{Decida se quer ou não comprar o produto oferecido na seguinte resposta}" + formattedResponse;
-            clientResponse = await SendPrompt(initialPrompt, "store", "client");
-            formattedResponse = ExtractResponse(clientResponse);
-            Dialogue.Instance.StartDialogue(formattedResponse, true);
-            Debug.Log("Pergunta do cliente: " + formattedResponse);
-            await TTSManager.Instance.SpeakAsync(formattedResponse, TTSManager.Instance.voiceClient);
-            Dialogue.Instance.CloseDialogue();
-
+            // 2) After the loop finishes (buyer decided or we hit max turns),
+            //    let's walk to the exit
             Exit targetExit = FindExit();
-            Vector3 exitPosition = targetExit.transform.position;
-
-            navMeshAgent.isStopped = false;
-            navMeshAgent.speed = speed;
-            navMeshAgent.SetDestination(exitPosition);
-
-            if (navMeshAgent.remainingDistance <= navMeshAgent.stoppingDistance + 0.1f)
+            if (targetExit != null)
             {
-                StopImmediately();
+                Debug.Log("[Client] Conversation ended => going to exit");
+                Vector3 exitPosition = targetExit.transform.position;
+                navMeshAgent.isStopped = false;
+                navMeshAgent.speed = speed;
+                navMeshAgent.SetDestination(exitPosition);
+            }
+            else
+            {
+                Debug.Log("[Client] Nenhuma saída encontrada na cena.");
             }
         }
+    }
+
+    /// <summary>
+    /// Run a mini turn-based conversation: store -> buyer -> store -> buyer...
+    /// Stop early if buyer says "vou levar" or "não vou levar".
+    /// Or end if we exceed maxTurns.
+    /// </summary>
+    private async Task RunStoreConversationLoop()
+    {
+        int maxTurns = 6;
+
+        // The buyer's last message (we start the store conversation with a greeting)
+        string buyerMessage = $"Olá, quero comprar o produto {requestedItem}";
+        string storeMessage = "";
+
+        for (int turn = 0; turn < maxTurns; turn++)
+        {
+            // --- SELLER (STORE) TURN ---
+            Debug.Log($"[STORE TURN] Sending buyer message => {buyerMessage}");
+            string storeJson = await SendPrompt(buyerMessage, "store", "client");
+            storeMessage = ExtractResponse(storeJson);
+            Debug.Log($"[STORE TURN] Store responded => {storeMessage}");
+
+            // --- BUYER TURN ---
+            Debug.Log($"[BUYER TURN] Sending store message => {storeMessage}");
+            string buyerJson = await SendPrompt(storeMessage, "client", "seller");
+            buyerMessage = ExtractResponse(buyerJson);
+            Debug.Log($"[BUYER TURN] Buyer responded => {buyerMessage}");
+
+            // Check if buyer made a final decision
+            if (BuyerHasDecided(buyerMessage))
+            {
+                Debug.Log($"[BUYER TURN] Buyer made a final decision => {buyerMessage}");
+                return;
+            }
+        }
+
+        Debug.Log($"[RunStoreConversationLoop] Max {maxTurns} turns reached. Ending conversation anyway.");
+    }
+
+    private bool BuyerHasDecided(string text)
+    {
+        // Lowercase, remove punctuation
+        string check = text.ToLower().Replace(".", "").Replace("!", "").Replace("?", "");
+        if (check.Contains("vou levar") || check.Contains("não vou levar") || check.Contains("nao vou levar"))
+        {
+            return true;
+        }
+        return false;
     }
 
     protected Store FindStore(string storeID)
@@ -167,16 +221,16 @@ public class Client : Agent
     protected Exit FindExit()
     {
         Exit[] exits = Object.FindObjectsByType<Exit>(FindObjectsSortMode.None);
-        foreach (Exit exit in exits)
+        if (exits.Length > 0)
         {
-            return exit;
+            return exits[0];
         }
         return null;
     }
 
-    private string ExtractFirstNumber(string response)
+    private string ExtractFirstNumber(string text)
     {
-        foreach (char c in response)
+        foreach (char c in text)
         {
             if (char.IsDigit(c))
             {
@@ -191,9 +245,4 @@ public class Client : Agent
         navMeshAgent.isStopped = true;
         navMeshAgent.velocity = Vector3.zero;
     }
-
 }
-
-
-
-

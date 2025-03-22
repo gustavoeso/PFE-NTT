@@ -1,19 +1,9 @@
-using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.AI;
 
 public class Store : MonoBehaviour
 {
-    public string StoreId;
-    private async void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag("Client"))
-        {
-            Client clientAgent = other.GetComponent<Client>();
-            if (clientAgent != null)
-            {
-                await clientAgent.StartConversation("Store");
-            }
-        }
-    }
+    public string StoreId; // e.g. "100", "105", etc.
+
+    // We let the Client handle the conversation in code. 
+    // So no OnTriggerEnter needed here.
 }

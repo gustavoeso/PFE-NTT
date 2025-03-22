@@ -8,11 +8,11 @@ public class Exit : MonoBehaviour
         {
             Debug.Log("Cliente saiu do shopping! Encerrando jogo...");
 
-            #if UNITY_EDITOR
-                UnityEditor.EditorApplication.isPlaying = false;
-            #else
-                Application.Quit();
-            #endif
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
         }
     }
 }
