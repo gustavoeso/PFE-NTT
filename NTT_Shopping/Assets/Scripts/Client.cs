@@ -138,10 +138,6 @@ public class Client : Agent
         {
             Debug.Log("[Client] Starting multi-turn conversation with the Store.");
 
-<<<<<<< HEAD
-            // 1) We do the turn-based loop
-            await RunStoreConversationLoop();
-=======
             string sellerResponse = await SendPrompt(formattedResponse, "store", "store");
             formattedResponse = ExtractResponse(sellerResponse);
             Dialogue.Instance.StartDialogue(formattedResponse, false);
@@ -165,7 +161,6 @@ public class Client : Agent
             Dialogue.Instance.StartDialogue(formattedResponse, true);
             await TTSManager.Instance.SpeakAsync(formattedResponse, TTSManager.Instance.voiceClient);
             Dialogue.Instance.CloseDialogue();
->>>>>>> 0149944923e8477417c7a2ff25f7a6a028ea750f
 
             // 2) After the loop finishes (buyer decided or we hit max turns),
             //    let's walk to the exit
