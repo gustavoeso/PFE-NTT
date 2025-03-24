@@ -630,6 +630,42 @@ def client_request():
     buyer_reply = buyer_chain.run(seller_utterance=prompt)
     return jsonify({"response": buyer_reply})
 
+@app.route('/resumoOferta', methods=['POST'])
+def resumo_oferta():
+    """
+    Gera um resumo amigável da conversa usando o histórico do buyer.
+    """
+    history = buyer_memory.load_memory_variables({}).get("history", [])
+
+    # Se quiser visualizar o histórico completo:
+    print("=== Histórico da conversa ===")
+    for msg in history:
+        print(f"{msg.type.upper()}: {msg.content}")
+
+    # Cria um prompt de resumo
+    resumo_prompt = ChatPromptTemplate.from_messages([
+        SystemMessagePromptTemplate.from_template(
+            "Você é um assistente que resume uma conversa de compra em uma frase clara e amigável para o usuário final."
+        ),
+        HumanMessagePromptTemplate.from_template(
+            "Resuma a seguinte conversa de compra:\n\n{conversa}"
+        )
+    ])
+
+    conversa_texto = "\n".join(f"{msg.type.upper()}: {msg.content}" for msg in history)
+
+    chain = LLMChain(
+        llm=openai_llm,
+        prompt=resumo_prompt,
+        verbose=False
+    )
+
+    resumo = chain.run(conversa=conversa_texto)
+
+    return jsonify({"response": resumo})
+
+
+
 
 if __name__ == '__main__':
     # In production, use a proper WSGI server. For dev, debug=True is OK.

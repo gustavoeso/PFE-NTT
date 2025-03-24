@@ -24,6 +24,9 @@ public class Client : Agent
     private bool storeConversationInProgress = false;
     private bool isLeavingStore = false;
 
+    private TaskCompletionSource<bool> decisionResult = null;
+
+
     private Store targetStore = null;
 
     protected override async void Start()
@@ -210,11 +213,28 @@ public class Client : Agent
 
             if (BuyerHasDecided(buyerMessage))
             {
-                Debug.Log($"[Buyer] Decisão final (após resposta da loja): {buyerMessage}");
-                Dialogue.Instance.CloseDialogue();
-                GoToExit();
+                Debug.Log($"[Buyer] Decisão detectada: {buyerMessage}");
+
+                string resumo = $"Resumo da oferta para '{requestedItem}': Produto com bom custo-benefício, entrega rápida e desconto de 10%.";
+
+                bool confirmada = await PurchaseDecisionUI.Instance.GetUserDecisionAsync(resumo);
+
+                if (confirmada)
+                {
+                    Debug.Log("[Humano] Confirmou a decisão.");
+                    Dialogue.Instance.CloseDialogue();
+                    GoToExit();
+                }
+                else
+                {
+                    Debug.Log("[Humano] Cancelou a decisão. Continuando a conversa...");
+                    Dialogue.Instance.StartDialogue("Na verdade, mudei de ideia. Pode continuar explicando?", true);
+                    await TTSManager.Instance.SpeakAsync("Na verdade, mudei de ideia. Pode continuar explicando?", TTSManager.Instance.voiceClient);
+                }
+
                 return;
             }
+
         }
 
         Debug.LogWarning("[Client] Conversa atingiu o limite de turnos sem decisão. Forçando decisão...");
@@ -282,4 +302,33 @@ public class Client : Agent
         navMeshAgent.isStopped = true;
         navMeshAgent.velocity = Vector3.zero;
     }
+
+   
+
+    private async Task<string> GetResumoDaOfertaAsync()
+    {
+        string url = "http://localhost:8000/resumoOferta";
+
+        using (UnityWebRequest request = UnityWebRequest.PostWwwForm(url, "POST"))
+        {
+            request.downloadHandler = new DownloadHandlerBuffer();
+            request.uploadHandler = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes("{}"));
+            request.SetRequestHeader("Content-Type", "application/json");
+
+            var op = request.SendWebRequest();
+            while (!op.isDone) await Task.Yield();
+
+            if (request.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("Erro ao buscar resumo da oferta: " + request.error);
+                return "Não foi possível gerar o resumo da oferta.";
+            }
+
+            string responseText = request.downloadHandler.text;
+            ApiResponse response = JsonUtility.FromJson<ApiResponse>(responseText);
+            return response.response;
+        }
+    }
+
+
 }
