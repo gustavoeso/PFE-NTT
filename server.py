@@ -35,12 +35,6 @@ openai_llm = ChatOpenAI(
     temperature=0.3
 )
 
-buyer_seller_llm = ChatOpenAI(
-    model_name=model_name,
-    openai_api_key=api_key,
-    temperature=0
-)
-
 #####################################################################
 # 2) Database Setup
 #####################################################################
@@ -474,7 +468,7 @@ buyer_prompt = ChatPromptTemplate(
 )
 
 buyer_chain = LLMChain(
-    llm=buyer_seller_llm,
+    llm=openai_llm,
     prompt=buyer_prompt,
     memory=buyer_memory,
     verbose=False
@@ -523,7 +517,7 @@ seller_prompt = ChatPromptTemplate(
 )
 
 seller_chain = LLMChain(
-    llm=buyer_seller_llm,
+    llm=openai_llm,
     prompt=seller_prompt,
     verbose=False
 )
