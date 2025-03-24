@@ -35,6 +35,12 @@ openai_llm = ChatOpenAI(
     temperature=0.3
 )
 
+buyer_seller_llm = ChatOpenAI(
+    model_name=model_name,
+    openai_api_key=api_key,
+    temperature=0
+)
+
 #####################################################################
 # 2) Database Setup
 #####################################################################
@@ -443,6 +449,7 @@ Objetivo:
 - Depois de 3 perguntas, OBRIGATORIAMENTE deve decidir:
   - Se for comprar: escreva EXATAMENTE "Vou levar"
   - Se não for comprar: escreva EXATAMENTE "Não vou levar"
+- Você deve querer apenas aquilo que foi designado a você comprar e nada mais, não faça perguntas sobre outros produtos.
 
 Histórico da conversa até agora:
 {history}
@@ -467,7 +474,7 @@ buyer_prompt = ChatPromptTemplate(
 )
 
 buyer_chain = LLMChain(
-    llm=openai_llm,
+    llm=buyer_seller_llm,
     prompt=buyer_prompt,
     memory=buyer_memory,
     verbose=False
@@ -488,6 +495,7 @@ Objetivo:
 - Garantia de 1 ano.
 - Aceita cartões de crédito e débito, dinheiro e PIX.
 - Não encerre a conversa você mesmo.
+- Não sugira outros produtos.
 
 Estoque disponível (buscado com multi-table logic):
 {stock_info}
@@ -515,7 +523,7 @@ seller_prompt = ChatPromptTemplate(
 )
 
 seller_chain = LLMChain(
-    llm=openai_llm,
+    llm=buyer_seller_llm,
     prompt=seller_prompt,
     verbose=False
 )
