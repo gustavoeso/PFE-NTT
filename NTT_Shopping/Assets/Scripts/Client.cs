@@ -2,33 +2,38 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Networking;
+using System.Text.RegularExpressions;
+
+// A small helper class to map the JSON response from your Flask server.
+// e.g. { "response": "some text" }
+[System.Serializable]
+public class ApiResponse
+{
+    public string response;
+}
 
 public class Client : Agent
 {
-    private Rigidbody rb;
-    public float speed = 2.0f;
     public bool canCollide = true;
 
-    // The item we want
+    private Rigidbody rb;
+    public float speed = 2.0f;
     private string requestedItem = "Camiseta branca";
 
-    // Booleans to ensure we do things once
     private bool hasAskedGuide    = false;
     private bool onWayToStore     = false;
     private bool hasTalkedToStore = false;
+    private Store targetStore     = null;
 
-    // Store reference
-    private Store targetStore = null;
+    // Flag to prevent starting multiple "store" conversations at once
+    private bool storeConversationInProgress = false;
 
     protected override async void Start()
     {
         base.Start();
         rb = GetComponent<Rigidbody>();
-
-        // 1) Call /startApplication to initialize server
         await CallStartApplication();
 
-        // 2) (Optional) Move near the guide so we can trigger OnTriggerEnter in Guide
         GameObject guide = GameObject.FindGameObjectWithTag("Guide");
         if (guide != null && navMeshAgent != null)
         {
@@ -49,15 +54,18 @@ public class Client : Agent
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 10f);
         }
 
-        // If we're on the way to the store, check if we've arrived
-        if (onWayToStore && targetStore != null && !hasTalkedToStore)
+        // Only check the distance and start conversation if:
+        // - We are on the way to the store
+        // - We haven't already talked to the store
+        // - A store conversation is NOT already running
+        if (onWayToStore && targetStore != null && !hasTalkedToStore && !storeConversationInProgress)
         {
             float distance = Vector3.Distance(transform.position, targetStore.transform.position);
-            if (distance < 1.5f)  // "Close enough" threshold
+            if (distance < 1.5f)
             {
                 onWayToStore = false;
                 hasTalkedToStore = true;
-                // Start the store conversation automatically
+                // Call StartConversation("Store") exactly once
                 _ = StartConversation("Store");
             }
         }
@@ -72,10 +80,7 @@ public class Client : Agent
             request.SetRequestHeader("Content-Type", "application/json");
 
             var operation = request.SendWebRequest();
-            while (!operation.isDone)
-            {
-                await Task.Yield();
-            }
+            while (!operation.isDone) await Task.Yield();
 
             if (request.result != UnityWebRequest.Result.Success)
             {
@@ -89,40 +94,47 @@ public class Client : Agent
     }
 
     public override async Task StartConversation(string dialoguePartner)
-    {   
-        await base.StartConversation(dialoguePartner);
-        Debug.Log("Iniciando conversa com: " + dialoguePartner);
-        canCollide = false;
+    {
+        // If about to start a Store conversation, ensure we don't do it twice
+        if (dialoguePartner == "Store")
+        {
+            if (storeConversationInProgress) return;
+            storeConversationInProgress = true;
+        }
 
-        if (isRequestInProgress) return; // Already making a request
+        // Call base (if your parent class does anything special)
+        await base.StartConversation(dialoguePartner);
+
+        if (isRequestInProgress) return;
+
+        canCollide = false;
 
         if (dialoguePartner == "Guide")
         {
-            // Only do this once
-            if (hasAskedGuide)
-            {
-                Debug.Log("[Client] Já falei com o Guide. Ignorando.");
-                return;
-            }
+            if (hasAskedGuide) return;
             hasAskedGuide = true;
 
-            Debug.Log($"[Client] Asking Guide about item '{requestedItem}'");
+            string prompt = "Estou procurando o produto: " + requestedItem;
 
-            // 1) Ask the "guide" for the store number / position
-            string prompt         = "Estou procurando o produto: " + requestedItem;
-            string guideJson      = await SendPrompt(prompt, "guide", "client");
-            string guideAnswer    = ExtractResponse(guideJson);
+            Dialogue.Instance.InitializeDialogue("client", "guide");
+            Dialogue.Instance.StartDialogue(prompt, true);
+            await TTSManager.Instance.SpeakAsync(prompt, TTSManager.Instance.voiceClient);
 
-            Debug.Log("[Client] Guide responded => " + guideAnswer);
+            // Send prompt to your /request/guide endpoint
+            string guideJson = await SendPrompt(prompt, "guide", "client");
+            string guideAnswer = ExtractResponse(guideJson);
 
-            // Let’s parse the store number from the text
+            Dialogue.Instance.StartDialogue(guideAnswer, false);
+            await TTSManager.Instance.SpeakAsync(guideAnswer, TTSManager.Instance.voiceGuide);
+            Dialogue.Instance.CloseDialogue();
+
             string storeNumber = ExtractFirstNumber(guideAnswer);
-            Debug.Log("[Client] Store number extracted => " + storeNumber);
+            Debug.Log("[Client] Número da loja extraído: " + storeNumber);
 
-            // Move to that store if it exists in the scene
             targetStore = FindStore(storeNumber);
             if (targetStore != null)
             {
+                Debug.Log("[Client] Loja encontrada na cena com ID: " + storeNumber);
                 Vector3 storePosition = targetStore.transform.position;
                 navMeshAgent.isStopped = false;
                 navMeshAgent.speed = speed;
@@ -131,104 +143,90 @@ public class Client : Agent
             }
             else
             {
-                Debug.LogWarning("Loja não encontrada no Unity scene para o ID: " + storeNumber);
+                Debug.LogWarning("[Client] Loja NÃO encontrada na cena para o ID: " + storeNumber);
             }
         }
         else if (dialoguePartner == "Store")
         {
-            Debug.Log("[Client] Starting multi-turn conversation with the Store.");
-
-            string sellerResponse = await SendPrompt(formattedResponse, "store", "store");
-            formattedResponse = ExtractResponse(sellerResponse);
-            Dialogue.Instance.StartDialogue(formattedResponse, false);
-            Debug.Log("Resposta do vendedor: " + formattedResponse);
-            await TTSManager.Instance.SpeakAsync(formattedResponse, TTSManager.Instance.voiceGuide);
-
-            clientResponse = await SendPrompt("Pergunte ao usúario se ele deve ou não aceitar a oferta", "client", "client");
-            formattedResponse = ExtractResponse(clientResponse);
-            bool userDecision = await PurchaseDecisionUI.Instance.GetUserDecisionAsync(formattedResponse);
-
-            if (userDecision)
-            {
-                clientResponse = await SendPrompt("Aceite a oferta do vendedor e se despeça", "store", "client");
-                formattedResponse = ExtractResponse(clientResponse);
-            }
-            else
-            {
-                clientResponse = await SendPrompt("Negue a oferta do vendedor e se despeça", "store", "client");
-                formattedResponse = ExtractResponse(clientResponse);
-            }
-            Dialogue.Instance.StartDialogue(formattedResponse, true);
-            await TTSManager.Instance.SpeakAsync(formattedResponse, TTSManager.Instance.voiceClient);
-            Dialogue.Instance.CloseDialogue();
-
-            // 2) After the loop finishes (buyer decided or we hit max turns),
-            //    let's walk to the exit
-            Exit targetExit = FindExit();
-            if (targetExit != null)
-            {
-                Debug.Log("[Client] Conversation ended => going to exit");
-                Vector3 exitPosition = targetExit.transform.position;
-                navMeshAgent.isStopped = false;
-                navMeshAgent.speed = speed;
-                navMeshAgent.SetDestination(exitPosition);
-            }
-            else
-            {
-                Debug.Log("[Client] Nenhuma saída encontrada na cena.");
-            }
+            Dialogue.Instance.InitializeDialogue("client", "seller");
+            await RunStoreConversationLoop();
         }
 
         canCollide = true;
+
+        // If that was the Store conversation, allow another in the future (if needed)
+        if (dialoguePartner == "Store")
+        {
+            storeConversationInProgress = false;
+        }
     }
 
-    /// <summary>
-    /// Run a mini turn-based conversation: store -> buyer -> store -> buyer...
-    /// Stop early if buyer says "vou levar" or "não vou levar".
-    /// Or end if we exceed maxTurns.
-    /// </summary>
     private async Task RunStoreConversationLoop()
     {
         int maxTurns = 6;
 
-        // The buyer's last message (we start the store conversation with a greeting)
+        // Buyer's initial line
         string buyerMessage = $"Olá, quero comprar o produto {requestedItem}";
-        string storeMessage = "";
 
         for (int turn = 0; turn < maxTurns; turn++)
         {
-            // --- SELLER (STORE) TURN ---
-            Debug.Log($"[STORE TURN] Sending buyer message => {buyerMessage}");
-            string storeJson = await SendPrompt(buyerMessage, "store", "client");
-            storeMessage = ExtractResponse(storeJson);
-            Debug.Log($"[STORE TURN] Store responded => {storeMessage}");
+            // 1) Buyer speaks
+            Dialogue.Instance.StartDialogue(buyerMessage, true);
+            await TTSManager.Instance.SpeakAsync(buyerMessage, TTSManager.Instance.voiceClient);
 
-            // --- BUYER TURN ---
-            Debug.Log($"[BUYER TURN] Sending store message => {storeMessage}");
-            string buyerJson = await SendPrompt(storeMessage, "client", "seller");
-            buyerMessage = ExtractResponse(buyerJson);
-            Debug.Log($"[BUYER TURN] Buyer responded => {buyerMessage}");
-
-            // Check if buyer made a final decision
+            // 2) Check if the buyer decided
             if (BuyerHasDecided(buyerMessage))
             {
-                Debug.Log($"[BUYER TURN] Buyer made a final decision => {buyerMessage}");
+                Debug.Log($"[Buyer] Decisão final: {buyerMessage}");
+                Dialogue.Instance.CloseDialogue();
+                GoToExit();
+                return;
+            }
+
+            // 3) Store responds
+            string storeJson = await SendPrompt(buyerMessage, "store", "client");
+            string storeMessage = ExtractResponse(storeJson);
+
+            Dialogue.Instance.StartDialogue(storeMessage, false);
+            await TTSManager.Instance.SpeakAsync(storeMessage, TTSManager.Instance.voiceGuide);
+
+            // 4) Buyer responds to store
+            string buyerJson = await SendPrompt(storeMessage, "client", "seller");
+            buyerMessage = ExtractResponse(buyerJson);
+
+            // 5) Check decision again
+            if (BuyerHasDecided(buyerMessage))
+            {
+                Debug.Log($"[Buyer] Decisão final: {buyerMessage}");
+                Dialogue.Instance.CloseDialogue();
+                GoToExit();
                 return;
             }
         }
 
-        Debug.Log($"[RunStoreConversationLoop] Max {maxTurns} turns reached. Ending conversation anyway.");
+        // If we reach max turns, end conversation anyway
+        Debug.Log("[RunStoreConversationLoop] Conversa encerrada por limite de turnos.");
+        Dialogue.Instance.CloseDialogue();
+        GoToExit();
+    }
+
+    private void GoToExit()
+    {
+        Exit exitNow = FindExit();
+        if (exitNow != null)
+        {
+            Vector3 exitPosition = exitNow.transform.position;
+            navMeshAgent.isStopped = false;
+            navMeshAgent.speed = speed;
+            navMeshAgent.SetDestination(exitPosition);
+        }
     }
 
     private bool BuyerHasDecided(string text)
     {
-        // Lowercase, remove punctuation
+        // Lowercase and remove punctuation for easy matching
         string check = text.ToLower().Replace(".", "").Replace("!", "").Replace("?", "");
-        if (check.Contains("vou levar") || check.Contains("não vou levar") || check.Contains("nao vou levar"))
-        {
-            return true;
-        }
-        return false;
+        return check.Contains("vou levar") || check.Contains("não vou levar") || check.Contains("nao vou levar");
     }
 
     protected Store FindStore(string storeID)
@@ -237,9 +235,7 @@ public class Client : Agent
         foreach (Store store in stores)
         {
             if (store.StoreId == storeID)
-            {
                 return store;
-            }
         }
         return null;
     }
@@ -247,23 +243,26 @@ public class Client : Agent
     protected Exit FindExit()
     {
         Exit[] exits = Object.FindObjectsByType<Exit>(FindObjectsSortMode.None);
-        if (exits.Length > 0)
-        {
-            return exits[0];
-        }
-        return null;
+        return exits.Length > 0 ? exits[0] : null;
     }
 
     private string ExtractFirstNumber(string text)
     {
-        foreach (char c in text)
-        {
-            if (char.IsDigit(c))
-            {
-                return c.ToString();
-            }
-        }
-        return "";
+        Match match = Regex.Match(text, @"\d+");
+        return match.Success ? match.Value : "";
+    }
+
+    /// <summary>
+    /// Extract the "response" field from the JSON that the Flask server returns.
+    /// Since the server returns: { "response": "some text" },
+    /// we can parse it with JsonUtility into our ApiResponse class.
+    /// </summary>
+    private string ExtractResponse(string json)
+    {
+        if (string.IsNullOrEmpty(json)) return "";
+        ApiResponse respObject = JsonUtility.FromJson<ApiResponse>(json);
+        if (respObject == null) return "";
+        return respObject.response;
     }
 
     public void StopImmediately()
