@@ -112,7 +112,7 @@ sql_chain = SQLDatabaseChain.from_llm(
     llm=llm_for_sql,
     db=database,
     prompt=sql_prompt,
-    verbose=False
+    verbose=True  # <- mostra o prompt, SQL e resultado no terminal
 )
 
 
@@ -131,28 +131,30 @@ def search_database(nl_query: str):
     except Exception as e:
         print(f"[search_database] Error generating SQL: {e}")
         return ("", [])
+
     print(f"[search_database] Chain output: {chain_output}")
-    # chain_output is typically a dict with keys: {"query": ..., "result": ...}
+
     raw_result = chain_output.get("result", "")
     if not raw_result:
         return ("", [])
 
-    # Remove triple backticks
-    sanitized = raw_result.replace("```", "")
-    # Remove "SQLQuery:"
-    sanitized = sanitized.replace("SQLQuery:", "").strip()
-
+    sanitized = raw_result.replace("```", "").replace("SQLQuery:", "").strip()
     sql_text = sanitized
 
-    print(f"[search_database] SQL Generated: {sql_text}")
+    print(f"[search_database] SQL Gerado:\n{sql_text}")
 
     rows = []
     try:
         with engine.connect() as conn:
             result_proxy = conn.execute(text(sql_text))
             rows = result_proxy.fetchall()
+
+            print(f"[search_database] Resultado da query:")
+            for i, row in enumerate(rows):
+                print(f"  Linha {i + 1}: {row}")
+
     except Exception as e:
-        print(f"[search_database] Error executing SQL: {e}")
+        print(f"[search_database] Erro ao executar a query SQL: {e}")
 
     return (sql_text, rows)
 
@@ -173,6 +175,9 @@ O comprador quer: "{user_request}".
 
 Gere, em português, um comando de consulta (NÃO em SQL, mas um texto em linguagem natural)
 que será usado pelo pesquisador para encontrar a loja certa na tabela 'lojas'.
+
+Por exemplo, se o comprador quer uma camiseta verde, o comando pode ser:
+"Na tabela 'lojas', retorne id, tipo, numero WHERE tipo = 'Roupas'"
 
 Explique brevemente qual 'tipo' corresponde ao que o comprador quer. 
 Retorne APENAS o texto que o pesquisador usará, sem explicações adicionais.
