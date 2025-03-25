@@ -22,7 +22,7 @@ public class TTSManager : MonoBehaviour
         else Destroy(gameObject);
 
         EnvLoader.LoadEnv();
-        apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+                apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
         if (!string.IsNullOrEmpty(apiKey))
         {
             apiKey = apiKey.Trim();
@@ -128,3 +128,7 @@ public class TTSManager : MonoBehaviour
         }
     }
 }
+
+
+
+

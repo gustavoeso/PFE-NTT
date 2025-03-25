@@ -140,3 +140,7 @@ public class Dialogue : MonoBehaviour
         gameObject.SetActive(false);
     }
 }
+
+
+
+

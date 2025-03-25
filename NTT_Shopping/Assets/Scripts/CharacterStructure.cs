@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 // Classe auxiliar para expor no Inspector.
@@ -8,3 +9,4 @@ public class CharacterMapping
     public string characterID;       // Ex.: "Guerreiro", "Mago", "Arqueiro"
     public GameObject characterPrefab;
 }
+
