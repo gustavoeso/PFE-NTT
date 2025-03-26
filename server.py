@@ -647,7 +647,7 @@ def resumo_oferta():
     # Cria um prompt de resumo
     resumo_prompt = ChatPromptTemplate.from_messages([
         SystemMessagePromptTemplate.from_template(
-            "Você é um assistente que resume uma conversa de compra em uma frase clara e amigável para o usuário final."
+            "Você é um assistente que resume uma conversa de compra em uma frase clara e amigável para o usuário final. Garanta que o valor do produto seja mencionado."
         ),
         HumanMessagePromptTemplate.from_template(
             "Resuma a seguinte conversa de compra:\n\n{conversa}"
