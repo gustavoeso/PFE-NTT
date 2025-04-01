@@ -444,6 +444,7 @@ Objetivo:
   - Se for comprar: escreva EXATAMENTE "Vou levar"
   - Se não for comprar: escreva EXATAMENTE "Não vou levar"
 - Você deve querer apenas aquilo que foi designado a você comprar e nada mais, não faça perguntas sobre outros produtos.
+- Se encontrar uma camiseta branca por até R$ 60,00, você tende a comprar.
 
 Histórico da conversa até agora:
 {history}
@@ -647,7 +648,7 @@ def resumo_oferta():
     # Cria um prompt de resumo
     resumo_prompt = ChatPromptTemplate.from_messages([
         SystemMessagePromptTemplate.from_template(
-            "Você é um assistente que resume uma conversa de compra em uma frase clara e amigável para o usuário final. Garanta que o valor do produto seja mencionado."
+            "Você é um assistente que resume uma conversa de compra em uma frase clara e amigável para o usuário final. Você DEVE retornar o valor do produto que o usuário deseja."
         ),
         HumanMessagePromptTemplate.from_template(
             "Resuma a seguinte conversa de compra:\n\n{conversa}"
