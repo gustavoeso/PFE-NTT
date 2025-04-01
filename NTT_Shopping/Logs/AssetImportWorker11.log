@@ -1,0 +1,484 @@
+Using pre-set license
+Built from '6000.0/staging' branch; Version is '6000.0.36f1 (9fe3b5f71dbb) revision 10478517'; Using compiler version '193933523'; Build Type 'Release'
+OS: 'Windows 11  (10.0.26100) 64bit CoreSingleLanguage' Language: 'pt' Physical Memory: 23916 MB
+BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1, IsPro: 1
+
+COMMAND LINE ARGUMENTS:
+C:\Program Files\Unity\Hub\Editor\6000.0.36f1\Editor\Unity.exe
+-adb2
+-batchMode
+-noUpm
+-name
+AssetImportWorker11
+-projectPath
+C:/Users/matra/Documents/Semestre_8/PFE/PFE-NTT/NTT_Shopping
+-logFile
+Logs/AssetImportWorker11.log
+-srvPort
+59003
+-job-worker-count
+7
+-background-job-worker-count
+8
+-gc-helper-count
+1
+Successfully changed project path to: C:/Users/matra/Documents/Semestre_8/PFE/PFE-NTT/NTT_Shopping
+C:/Users/matra/Documents/Semestre_8/PFE/PFE-NTT/NTT_Shopping
+[UnityMemory] Configuration Parameters - Can be set up in boot.config
+    "memorysetup-bucket-allocator-granularity=16"
+    "memorysetup-bucket-allocator-bucket-count=8"
+    "memorysetup-bucket-allocator-block-size=33554432"
+    "memorysetup-bucket-allocator-block-count=8"
+    "memorysetup-main-allocator-block-size=16777216"
+    "memorysetup-thread-allocator-block-size=16777216"
+    "memorysetup-gfx-main-allocator-block-size=16777216"
+    "memorysetup-gfx-thread-allocator-block-size=16777216"
+    "memorysetup-cache-allocator-block-size=4194304"
+    "memorysetup-typetree-allocator-block-size=2097152"
+    "memorysetup-profiler-bucket-allocator-granularity=16"
+    "memorysetup-profiler-bucket-allocator-bucket-count=8"
+    "memorysetup-profiler-bucket-allocator-block-size=33554432"
+    "memorysetup-profiler-bucket-allocator-block-count=8"
+    "memorysetup-profiler-allocator-block-size=16777216"
+    "memorysetup-profiler-editor-allocator-block-size=1048576"
+    "memorysetup-temp-allocator-size-main=16777216"
+    "memorysetup-job-temp-allocator-block-size=2097152"
+    "memorysetup-job-temp-allocator-block-size-background=1048576"
+    "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+    "memorysetup-allocator-temp-initial-block-size-main=262144"
+    "memorysetup-allocator-temp-initial-block-size-worker=262144"
+    "memorysetup-temp-allocator-size-background-worker=32768"
+    "memorysetup-temp-allocator-size-job-worker=262144"
+    "memorysetup-temp-allocator-size-preload-manager=33554432"
+    "memorysetup-temp-allocator-size-nav-mesh-worker=65536"
+    "memorysetup-temp-allocator-size-audio-worker=65536"
+    "memorysetup-temp-allocator-size-cloud-worker=32768"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gfx=262144"
+Player connection [2576]  Target information:
+
+Player connection [2576]  * "[IP] 192.168.1.111 [Port] 0 [Flags] 2 [Guid] 1131971315 [EditorId] 1131971315 [Version] 1048832 [Id] WindowsEditor(7,SigMachine) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [2576] Host joined multi-casting on [225.0.0.222:54997]...
+Player connection [2576] Host joined alternative multi-casting on [225.0.0.222:34997]...
+JobSystem: Creating JobQueue using job-worker-count value 7
+Input System module state changed to: Initialized.
+[Physics::Module] Initialized fallback backend.
+[Physics::Module] Id: 0xdecafbad
+Library Redirect Path: Library/
+[Physics::Module] Selected backend.
+[Physics::Module] Name: PhysX
+[Physics::Module] Id: 0xf2b8ea05
+[Physics::Module] SDK Version: 4.1.2
+[Physics::Module] Integration Version: 1.0.0
+[Physics::Module] Threading Mode: Multi-Threaded
+Refreshing native plugins compatible for Editor in 1.54 ms, found 3 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Initialize engine version: 6000.0.36f1 (9fe3b5f71dbb)
+[Subsystems] Discovering subsystems at path C:/Program Files/Unity/Hub/Editor/6000.0.36f1/Editor/Data/Resources/UnitySubsystems
+[Subsystems] Discovering subsystems at path C:/Users/matra/Documents/Semestre_8/PFE/PFE-NTT/NTT_Shopping/Assets
+GfxDevice: creating device client; kGfxThreadingModeNonThreaded
+Direct3D:
+    Version:  Direct3D 11.0 [level 11.1]
+    Renderer: NVIDIA GeForce GTX 1650 (ID=0x1f9d)
+    Vendor:   NVIDIA
+    VRAM:     3962 MB
+    Driver:   30.0.15.1274
+Initialize mono
+Mono path[0] = 'C:/Program Files/Unity/Hub/Editor/6000.0.36f1/Editor/Data/Managed'
+Mono path[1] = 'C:/Program Files/Unity/Hub/Editor/6000.0.36f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32'
+Mono config path = 'C:/Program Files/Unity/Hub/Editor/6000.0.36f1/Editor/Data/MonoBleedingEdge/etc'
+Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56364
+Begin MonoManager ReloadAssembly
+Registering precompiled unity dll's ...
+Register platform support module: C:/Program Files/Unity/Hub/Editor/6000.0.36f1/Editor/Data/PlaybackEngines/WebGLSupport/UnityEditor.WebGL.Extensions.dll
+Register platform support module: C:/Program Files/Unity/Hub/Editor/6000.0.36f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/UnityEditor.WindowsStandalone.Extensions.dll
+Registered in 0.003728 seconds.
+- Loaded All Assemblies, in  0.340 seconds
+Native extension for WindowsStandalone target not found
+Native extension for WebGL target not found
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  0.303 seconds
+Domain Reload Profiling: 642ms
+	BeginReloadAssembly (114ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (0ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (1ms)
+	RebuildCommonClasses (33ms)
+	RebuildNativeTypeToScriptingClass (10ms)
+	initialDomainReloadingComplete (46ms)
+	LoadAllAssembliesAndSetupDomain (135ms)
+		LoadAssemblies (112ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (132ms)
+			TypeCache.Refresh (130ms)
+				TypeCache.ScanAssembly (118ms)
+			BuildScriptInfoCaches (0ms)
+			ResolveRequiredComponents (0ms)
+	FinalizeReload (304ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (262ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (25ms)
+			SetLoadedEditorAssemblies (4ms)
+			BeforeProcessingInitializeOnLoad (45ms)
+			ProcessInitializeOnLoadAttributes (137ms)
+			ProcessInitializeOnLoadMethodAttributes (51ms)
+			AfterProcessingInitializeOnLoad (0ms)
+			EditorAssembliesLoaded (0ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (0ms)
+========================================================================
+Worker process is ready to serve import requests
+Import Worker Mode flag is 0x00
+Begin MonoManager ReloadAssembly
+- Loaded All Assemblies, in  0.685 seconds
+Refreshing native plugins compatible for Editor in 0.94 ms, found 3 plugins.
+Native extension for WindowsStandalone target not found
+Native extension for WebGL target not found
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  0.709 seconds
+Domain Reload Profiling: 1391ms
+	BeginReloadAssembly (152ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (5ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (29ms)
+	RebuildCommonClasses (32ms)
+	RebuildNativeTypeToScriptingClass (10ms)
+	initialDomainReloadingComplete (37ms)
+	LoadAllAssembliesAndSetupDomain (450ms)
+		LoadAssemblies (332ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (207ms)
+			TypeCache.Refresh (151ms)
+				TypeCache.ScanAssembly (138ms)
+			BuildScriptInfoCaches (45ms)
+			ResolveRequiredComponents (9ms)
+	FinalizeReload (710ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (570ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (3ms)
+			SetLoadedEditorAssemblies (3ms)
+			BeforeProcessingInitializeOnLoad (102ms)
+			ProcessInitializeOnLoadAttributes (384ms)
+			ProcessInitializeOnLoadMethodAttributes (73ms)
+			AfterProcessingInitializeOnLoad (5ms)
+			EditorAssembliesLoaded (0ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (6ms)
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.01 seconds
+Refreshing native plugins compatible for Editor in 1.05 ms, found 3 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Unloading 212 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 5934 unused Assets / (4.3 MB). Loaded Objects now: 6639.
+Memory consumption went from 162.8 MB to 158.5 MB.
+Total: 8.697300 ms (FindLiveObjects: 0.651100 ms CreateObjectMapping: 0.531500 ms MarkObjects: 5.260500 ms  DeleteObjects: 2.252700 ms)
+
+========================================================================
+Received Import Request.
+  Time since last request: 1690261.151660 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/floor_tiles_04.mat
+  artifactKey: Guid(8e6212db90fc2b34bbcfa0bfc3dcd2d5) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/floor_tiles_04.mat using Guid(8e6212db90fc2b34bbcfa0bfc3dcd2d5) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: 'aaed55d42bb24c71ae1e5cb701182785') in 2.8496424 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
+
+========================================================================
+Received Import Request.
+  Time since last request: 93.622530 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/blue_floor_tiles_01.mat
+  artifactKey: Guid(e686941d8bd203247a72bf8460b51731) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/blue_floor_tiles_01.mat using Guid(e686941d8bd203247a72bf8460b51731) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: 'eb160b41bcf320e9975463f37c28140f') in 0.069995 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000041 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/cobblestone_05.mat
+  artifactKey: Guid(c6a45a430aaf2ff409e0172fe480753e) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/cobblestone_05.mat using Guid(c6a45a430aaf2ff409e0172fe480753e) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: '0ddc46345d8742a536e5fe678a7e86d5') in 0.0092825 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000040 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/cobblestone_square.mat
+  artifactKey: Guid(4ab544e5d26ba504ba008960bc10fe1a) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/cobblestone_square.mat using Guid(4ab544e5d26ba504ba008960bc10fe1a) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: 'b1db44830fa8b6535df8b134580d57e6') in 0.0126077 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000031 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/concrete_floor_painted.mat
+  artifactKey: Guid(4cb799ad38b5ea649a6046ddf27870f3) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/concrete_floor_painted.mat using Guid(4cb799ad38b5ea649a6046ddf27870f3) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: 'e4889838ffb8efa9a2514ac4b83f886b') in 0.0122307 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000051 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/cobblestone_floor_02.mat
+  artifactKey: Guid(63311583eacee584f8175e09f2d19b0b) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/cobblestone_floor_02.mat using Guid(63311583eacee584f8175e09f2d19b0b) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: 'b0844feaab95de64a030094cdbb12427') in 0.0165013 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000036 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/cobblestone_color.mat
+  artifactKey: Guid(33b990caa5adfa0488bea7f2865d6b2d) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/cobblestone_color.mat using Guid(33b990caa5adfa0488bea7f2865d6b2d) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: '3abf6e7b15cc095ef7b664c9dfa5f78d') in 0.0088454 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000041 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/pavement_01.mat
+  artifactKey: Guid(0992fb6ea93e460408f14845be490cf7) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/pavement_01.mat using Guid(0992fb6ea93e460408f14845be490cf7) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: '5874a598e20b187a94b1cdf1c4f648a8') in 0.01281 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000051 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/cobblestone_floor_07.mat
+  artifactKey: Guid(73d8a999c82209d4babd2ff80de6f785) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/cobblestone_floor_07.mat using Guid(73d8a999c82209d4babd2ff80de6f785) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: '40096b212045ac13ceb23665dcf41767') in 0.0092721 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000051 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/cobblestone_floor_03.mat
+  artifactKey: Guid(26bb7c5b404eb974aa1e2a7889d52627) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/cobblestone_floor_03.mat using Guid(26bb7c5b404eb974aa1e2a7889d52627) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: '31fe20dddd89fd25e7bb2b7322746188') in 0.0080964 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000027 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/cobblestone_floor_13.mat
+  artifactKey: Guid(05aa56a73e636d24eaa44719a4269378) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/cobblestone_floor_13.mat using Guid(05aa56a73e636d24eaa44719a4269378) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: '8e180f2f973ad327086429fa60028a76') in 0.0083212 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000041 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/cobblestone_floor_05.mat
+  artifactKey: Guid(df69af61972b270468b36e68142376c7) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/cobblestone_floor_05.mat using Guid(df69af61972b270468b36e68142376c7) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: '6256f0f50dbc8b988679b5483af9762e') in 0.0079281 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000036 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/square_floor_patern_01.mat
+  artifactKey: Guid(550b514c79e8f98469e85d43e49d0447) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/square_floor_patern_01.mat using Guid(550b514c79e8f98469e85d43e49d0447) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: 'bce1a2e59a5adaebef16894cbac469eb') in 0.0107571 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000031 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/cobblestone_floor_04.mat
+  artifactKey: Guid(22cda1e575d4350458f5d3a72d78b99f) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/cobblestone_floor_04.mat using Guid(22cda1e575d4350458f5d3a72d78b99f) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: '6bbc1118c128733ede6d8cae24865aaa') in 0.0089863 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000051 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/cobblestone_01.mat
+  artifactKey: Guid(3c2a0e63ae9c2424b8161c648b4a551a) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/cobblestone_01.mat using Guid(3c2a0e63ae9c2424b8161c648b4a551a) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: 'd4169745b0a2cf3ac06a2ad34907f6a8') in 0.0131328 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
+
+========================================================================
+Received Import Request.
+  Time since last request: 13.034923 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/brick_floor.mat
+  artifactKey: Guid(ef78daff60fd2494c91cd7d173d4b955) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/brick_floor.mat using Guid(ef78daff60fd2494c91cd7d173d4b955) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: 'f4cda4172a830470b179df8966d9d0e0') in 0.0228855 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000040 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/cobblestone_square.mat
+  artifactKey: Guid(4ab544e5d26ba504ba008960bc10fe1a) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/cobblestone_square.mat using Guid(4ab544e5d26ba504ba008960bc10fe1a) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: 'bfbf9e17cb576b66529aae095f5eff3c') in 0.0198892 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000028 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/floor_pebbles.mat
+  artifactKey: Guid(44c9dbac4e39fcb44a7a99fff9ea449d) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/floor_pebbles.mat using Guid(44c9dbac4e39fcb44a7a99fff9ea449d) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: '663a3b07bac9a66c8e0e8f934669c406') in 0.0883538 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 6
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000049 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/floor_bricks_02.mat
+  artifactKey: Guid(84f455856a201914a91eedad9cb711d4) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/floor_bricks_02.mat using Guid(84f455856a201914a91eedad9cb711d4) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: '7293b912fb31750ae1f34173fc2c3a01') in 0.0785474 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 6
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000056 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/large_floor_tiles_02.mat
+  artifactKey: Guid(eaa7ca54b310e324c862b3c74d4bafd7) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/large_floor_tiles_02.mat using Guid(eaa7ca54b310e324c862b3c74d4bafd7) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: 'e88a70467717ce9b0d99e868e97c9366') in 0.0639733 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 5
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000035 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/floor_tiles_02.mat
+  artifactKey: Guid(45c6b7d2286fb63448ac4e5dc2f83772) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/floor_tiles_02.mat using Guid(45c6b7d2286fb63448ac4e5dc2f83772) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: '275886d7b2ff852ff083fc03fae75f65') in 0.073967 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 5
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000092 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/concrete_floor_painted.mat
+  artifactKey: Guid(4cb799ad38b5ea649a6046ddf27870f3) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/concrete_floor_painted.mat using Guid(4cb799ad38b5ea649a6046ddf27870f3) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: '5f77095d4e15f0bb63108be7ae6bd8e3') in 0.0258375 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000106 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/floor_tiles_04.mat
+  artifactKey: Guid(8e6212db90fc2b34bbcfa0bfc3dcd2d5) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/floor_tiles_04.mat using Guid(8e6212db90fc2b34bbcfa0bfc3dcd2d5) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: '5a98f2e4856da7533356633244f74666') in 0.0795826 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 6
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000083 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/large_square_pattern_01.mat
+  artifactKey: Guid(1a215d1cf6d725145905997d174bc859) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/large_square_pattern_01.mat using Guid(1a215d1cf6d725145905997d174bc859) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: '35c03492c22503a9ff669da69f598e0b') in 0.1222333 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 5
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000060 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/cobblestone_floor_07.mat
+  artifactKey: Guid(73d8a999c82209d4babd2ff80de6f785) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/cobblestone_floor_07.mat using Guid(73d8a999c82209d4babd2ff80de6f785) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: '9776efc203667f44440116a2cded12c8') in 0.034661 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000060 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/floor_klinkers_01.mat
+  artifactKey: Guid(4dcf8937784d46544aa151936c236bc0) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/floor_klinkers_01.mat using Guid(4dcf8937784d46544aa151936c236bc0) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: '81610fcc53b52c975755577aacf614d5') in 0.0731551 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 6
+
+========================================================================
+Received Import Request.
+  Time since last request: 27.484534 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/large_grey_tiles.mat
+  artifactKey: Guid(c6f22a574aaef9c4ab38538fad3aab29) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/large_grey_tiles.mat using Guid(c6f22a574aaef9c4ab38538fad3aab29) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: '0c87818fa9753c51bf16765157c84045') in 0.0268727 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
+
+========================================================================
+Received Prepare
+Begin MonoManager ReloadAssembly
+- Loaded All Assemblies, in  0.850 seconds
+Refreshing native plugins compatible for Editor in 1.53 ms, found 3 plugins.
+Native extension for WindowsStandalone target not found
+Native extension for WebGL target not found
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  0.983 seconds
+Domain Reload Profiling: 1830ms
+	BeginReloadAssembly (250ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (20ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (75ms)
+	RebuildCommonClasses (34ms)
+	RebuildNativeTypeToScriptingClass (12ms)
+	initialDomainReloadingComplete (29ms)
+	LoadAllAssembliesAndSetupDomain (522ms)
+		LoadAssemblies (451ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (184ms)
+			TypeCache.Refresh (7ms)
+				TypeCache.ScanAssembly (0ms)
+			BuildScriptInfoCaches (163ms)
+			ResolveRequiredComponents (11ms)
+	FinalizeReload (984ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (776ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (4ms)
+			SetLoadedEditorAssemblies (5ms)
+			BeforeProcessingInitializeOnLoad (143ms)
+			ProcessInitializeOnLoadAttributes (532ms)
+			ProcessInitializeOnLoadMethodAttributes (82ms)
+			AfterProcessingInitializeOnLoad (11ms)
+			EditorAssembliesLoaded (0ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (18ms)
+Refreshing native plugins compatible for Editor in 1.87 ms, found 3 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Unloading 23 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 5931 unused Assets / (5.4 MB). Loaded Objects now: 6720.
+Memory consumption went from 156.8 MB to 151.3 MB.
+Total: 22.645900 ms (FindLiveObjects: 2.643700 ms CreateObjectMapping: 2.042500 ms MarkObjects: 11.217300 ms  DeleteObjects: 6.740000 ms)
+
+Prepare: number of updated asset objects reloaded= 0
+========================================================================
+Received Import Request.
+  Time since last request: 63.045274 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/floor_klinkers_01.mat
+  artifactKey: Guid(4dcf8937784d46544aa151936c236bc0) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/floor_klinkers_01.mat using Guid(4dcf8937784d46544aa151936c236bc0) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: '14f75dc6d8cfd8b59f56339b86e46249') in 0.5421068 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000041 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/floor_tiles_02.mat
+  artifactKey: Guid(45c6b7d2286fb63448ac4e5dc2f83772) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/floor_tiles_02.mat using Guid(45c6b7d2286fb63448ac4e5dc2f83772) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: '487b9835a0c40873364d37657300ec75') in 0.0216526 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.000060 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/floor_pattern_01.mat
+  artifactKey: Guid(7ecb834ea7ffff647aea1a5b9da6ec02) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/floor_pattern_01.mat using Guid(7ecb834ea7ffff647aea1a5b9da6ec02) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: 'a9461cfeb4fd7a94cf60de476c5390b5') in 0.0227106 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
+
+========================================================================
+Received Import Request.
+  Time since last request: 20.161583 seconds.
+  path: Assets/TextureHaven/floor_4k/floor_4k_materials/floor_tiles_06.mat
+  artifactKey: Guid(ac9f1f854581d37499cce9ef2a24611b) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/TextureHaven/floor_4k/floor_4k_materials/floor_tiles_06.mat using Guid(ac9f1f854581d37499cce9ef2a24611b) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: 'c958862dbdd2099093b35acc42faf7a9') in 0.1911399 seconds
+Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 6
+
