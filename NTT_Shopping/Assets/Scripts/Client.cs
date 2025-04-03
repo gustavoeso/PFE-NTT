@@ -25,16 +25,16 @@ public class Client : Agent
     private bool isLeavingStore = false;
 
     private TaskCompletionSource<bool> decisionResult = null;
-
-
     private Store targetStore = null;
 
     protected override async void Start()
     {
+        // Call base Start() first to generate myAgentId
         base.Start();
         rb = GetComponent<Rigidbody>();
         rb.isKinematic = true;
 
+        // (1) Immediately send /startApplication with agent_id in the JSON
         await CallStartApplication();
 
         GameObject guide = GameObject.FindGameObjectWithTag("Guide");
@@ -78,8 +78,15 @@ public class Client : Agent
     private async Task CallStartApplication()
     {
         string url = "http://localhost:8000/startApplication";
+
+        // JSON with { "agent_id": this.myAgentId }
+        var bodyObj = new { agent_id = myAgentId };
+        string bodyJson = JsonUtility.ToJson(bodyObj);
+        byte[] bodyRaw  = System.Text.Encoding.UTF8.GetBytes(bodyJson);
+
         using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
         {
+            request.uploadHandler   = new UploadHandlerRaw(bodyRaw);
             request.downloadHandler = new DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type", "application/json");
 
@@ -123,14 +130,17 @@ public class Client : Agent
             Dialogue.Instance.StartDialogue(prompt, true);
             await TTSManager.Instance.SpeakAsync(prompt, TTSManager.Instance.voiceClient);
 
+            // (2) Buyer -> guide endpoint
             string guideJson = await SendPrompt(prompt, "guide", "client");
             string guideAnswer = ExtractResponse(guideJson);
+            Debug.Log("[Client] guideAnswer=" + guideAnswer);
 
             Dialogue.Instance.StartDialogue(guideAnswer, false);
             await TTSManager.Instance.SpeakAsync(guideAnswer, TTSManager.Instance.voiceGuide);
             Dialogue.Instance.CloseDialogue();
 
-            string storeNumber = ExtractFirstNumber(guideAnswer);
+            // (3) Extract store number from "número=xxx"
+            string storeNumber = ExtractStoreNumber(guideAnswer);
             Debug.Log("[Client] Número da loja extraído: " + storeNumber);
 
             targetStore = FindStore(storeNumber);
@@ -200,6 +210,7 @@ public class Client : Agent
                 return;
             }
 
+            // Buyer -> store
             string storeJson = await SendPrompt(buyerMessage, "store", "client");
             string storeMessage = ExtractResponse(storeJson);
             Debug.Log($"[Store -> Buyer] {storeMessage}");
@@ -207,6 +218,7 @@ public class Client : Agent
             Dialogue.Instance.StartDialogue(storeMessage, false);
             await TTSManager.Instance.SpeakAsync(storeMessage, TTSManager.Instance.voiceGuide);
 
+            // Then store -> buyer
             string buyerJson = await SendPrompt(storeMessage, "client", "seller");
             buyerMessage = ExtractResponse(buyerJson);
             Debug.Log($"[Buyer -> Store] {buyerMessage}");
@@ -234,7 +246,6 @@ public class Client : Agent
 
                 return;
             }
-
         }
 
         Debug.LogWarning("[Client] Conversa atingiu o limite de turnos sem decisão. Forçando decisão...");
@@ -283,10 +294,18 @@ public class Client : Agent
         return exits.Length > 0 ? exits[0] : null;
     }
 
-    private string ExtractFirstNumber(string text)
+    // (3) Extract store number from text like "número=100"
+    private string ExtractStoreNumber(string text)
     {
-        Match match = Regex.Match(text, @"\d+");
-        return match.Success ? match.Value : "";
+        // Match e.g. "número=100" or "numero=105"
+        var match = Regex.Match(text, @"n[uú]mero\s*=\s*(\d+)");
+        if (match.Success)
+        {
+            return match.Groups[1].Value; // e.g. "100"
+        }
+
+        // If not matched, fallback to digits only (but might cause confusion if multiple numbers).
+        return Regex.Replace(text, @"[^\d]", "");
     }
 
     private string ExtractResponse(string json)
@@ -303,8 +322,6 @@ public class Client : Agent
         navMeshAgent.velocity = Vector3.zero;
     }
 
-   
-
     private async Task<string> GetResumoDaOfertaAsync()
     {
         string url = "http://localhost:8000/resumoOferta";
@@ -312,7 +329,7 @@ public class Client : Agent
         using (UnityWebRequest request = UnityWebRequest.PostWwwForm(url, "POST"))
         {
             request.downloadHandler = new DownloadHandlerBuffer();
-            request.uploadHandler = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes("{}"));
+            request.uploadHandler   = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes("{}"));
             request.SetRequestHeader("Content-Type", "application/json");
 
             var op = request.SendWebRequest();
@@ -329,6 +346,4 @@ public class Client : Agent
             return response.response;
         }
     }
-
-
 }

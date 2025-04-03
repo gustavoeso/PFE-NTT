@@ -1,6 +1,7 @@
 import os
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
+from collections import defaultdict
 
 # ----------------- LangChain + SQL Imports -----------------
 import openai
@@ -112,12 +113,12 @@ sql_chain = SQLDatabaseChain.from_llm(
     llm=llm_for_sql,
     db=database,
     prompt=sql_prompt,
-    verbose=True  # <- mostra o prompt, SQL e resultado no terminal
+    verbose=True  # shows prompt, SQL, and results in terminal
 )
 
 
 #####################################################################
-# 4) Function to search DB, removing backticks and prefix
+# 4) Function to search DB
 #####################################################################
 def search_database(nl_query: str):
     """
@@ -249,88 +250,102 @@ prompt_loja_fallback_chain = LLMChain(
     verbose=False
 )
 
+#####################################################################
+# 6) Server-Side Cache (New)
+#####################################################################
+# Key: agent_id (or user_id) string
+# Value: A dict with possible keys:
+#   - store_number, store_id, store_tipo
+#   - store_position
+#   - matching_items
+agent_cache = defaultdict(dict)
 
 #####################################################################
-# 6) The big multi_table_search function
+# 6.1) Helper Functions to Retrieve Data with Caching
 #####################################################################
-def multi_table_search(buyer_request: str) -> str:
+
+def get_store_number(buyer_request: str, agent_id: str) -> int:
     """
-    1) Generate a text query for 'lojas' using prompt_generator_chain
-    2) Convert that text query -> SQL using search_database
-    3) Find the store row
-    4) Find the store's position in 'posicao'
-    5) Query loja_{numero} for items
-    6) Return a textual summary
+    1. Check if 'store_number' is cached for this agent_id.
+    2. If not cached, run prompt_generator_chain + search_database to find the store.
+    3. Cache the store_number, store_id, store_tipo.
+    4. Return the store_number.
     """
-    # Step 1: Generate a prompt for 'lojas'
+    # If we already have a store_number, return it
+    if "store_number" in agent_cache[agent_id]:
+        return agent_cache[agent_id]["store_number"]
+    
+    # Otherwise, generate a query for 'lojas' using the LLM
     prompt_for_lojas = prompt_generator_chain.run({"user_request": buyer_request})
-
-    # Step 2: Actually query 'lojas'
     sql_store, rows_store = search_database(prompt_for_lojas)
-    if not rows_store:
-        return (
-            "=== LOG: StepC -> NENHUMA loja encontrada.\n"
-            f"PromptGenerator: {prompt_for_lojas}\n"
-            f"SQL Gerado: {sql_store}\n"
-            "Sem resultados."
-        )
 
-    # find first row with a valid integer in 'numero'
+    if not rows_store:
+        raise ValueError(f"Nenhuma loja encontrada para: '{buyer_request}'.")
+
     store_row = None
     for r in rows_store:
+        # row is (id, tipo, numero)
         try:
-            _ = int(r[2])  # parse
+            temp_num = int(r[2])
             store_row = r
             break
         except ValueError:
             continue
 
-    if store_row is None:
-        # no row had a valid numeric 'numero'
-        return (
-            "=== LOG: Nenhum 'numero' válido encontrado.\n"
-            f"PromptGenerator: {prompt_for_lojas}\n"
-            f"SQL Gerado: {sql_store}\n"
-            f"Rows: {rows_store}\n"
-            "Não foi possível continuar."
-        )
+    if not store_row:
+        raise ValueError("Nenhum 'numero' válido encontrado na tabela 'lojas'.")
 
-    store_info = {
-        "id": store_row[0],
-        "tipo": store_row[1]
-    }
-    try:
-        store_info["numero"] = int(store_row[2])
-    except ValueError:
-        return (
-            f"=== LOG: Loja tem numero inválido.\n"
-            f"Row: {store_row}"
-        )
+    store_id, store_tipo, store_num = store_row
+    agent_cache[agent_id]["store_number"] = store_num
+    agent_cache[agent_id]["store_id"] = store_id
+    agent_cache[agent_id]["store_tipo"] = store_tipo
 
-    # Step 3: get store coords from 'posicao' (optional)
-    nl_query_pos = f"Na tabela 'posicao', retorne x,y,z onde numero = {store_info['numero']}."
+    return store_num
+
+
+def get_store_coordinates(store_number: int, agent_id: str):
+    """
+    1. Checks if 'store_position' is cached.
+    2. If not, queries 'posicao' table for x, y, z.
+    3. Caches the result and returns (x, y, z) or None.
+    """
+    if "store_position" in agent_cache[agent_id]:
+        return agent_cache[agent_id]["store_position"]
+
+    # Build a quick NL query for 'posicao'
+    nl_query_pos = f"Na tabela 'posicao', retorne x,y,z onde numero = {store_number}."
     sql_pos, rows_pos = search_database(nl_query_pos)
-    coords = []
-    for r in rows_pos:
-        try:
-            coords.append({"x": float(r[0]), "y": float(r[1]), "z": float(r[2])})
-        except (TypeError, ValueError):
-            pass
+    if not rows_pos:
+        agent_cache[agent_id]["store_position"] = None
+        return None
 
-    # Step 4: check in loja_{numero}
-    store_number = store_info["numero"]
+    x, y, z = rows_pos[0]
+    coords = (x, y, z)
+    agent_cache[agent_id]["store_position"] = coords
+    return coords
 
-    # 4A) Primary attempt
+
+def get_matching_items(buyer_request: str, store_number: int, agent_id: str):
+    """
+    1. Check if 'matching_items' is in cache.
+    2. If not, tries an exact match search in loja_{store_number}.
+    3. If none found, fallback search in a price range.
+    4. Caches the final result in 'matching_items' and returns.
+    """
+    if "matching_items" in agent_cache[agent_id]:
+        return agent_cache[agent_id]["matching_items"]
+
+    # Attempt exact match
     prompt_for_loja = prompt_loja_chain.run({
         "store_number": store_number,
         "user_request": buyer_request
     })
     sql_loja, rows_loja = search_database(prompt_for_loja)
 
-    matching_items = []
+    exact_matches = []
     for r in rows_loja:
         try:
-            matching_items.append({
+            exact_matches.append({
                 "produto": r[0],
                 "tipo": r[1],
                 "qtd": int(r[2]),
@@ -340,86 +355,98 @@ def multi_table_search(buyer_request: str) -> str:
                 "estampa": r[6]
             })
         except (IndexError, ValueError):
-            continue
+            pass
 
-    exact_match_in_stock = matching_items
+    if exact_matches:
+        agent_cache[agent_id]["matching_items"] = exact_matches
+        return exact_matches
+
+    # Fallback
+    reference_price = 250.0
+    ignore_stock_query = f"""
+    SELECT produto, tipo, qtd, preco, tamanho, material, estampa
+    FROM loja_{store_number}
+    WHERE produto ILIKE '%{buyer_request}%' AND tipo ILIKE '%{buyer_request}%'
+    LIMIT 1
+    """
+    _, ignore_stock_rows = search_database(ignore_stock_query)
+    if ignore_stock_rows:
+        row0 = ignore_stock_rows[0]
+        try:
+            reference_price = float(row0[3])
+        except (IndexError, ValueError):
+            pass
+
+    min_price = reference_price * 0.8
+    max_price = reference_price * 1.2
+
+    fallback_prompt = prompt_loja_fallback_chain.run({
+        "store_number": store_number,
+        "user_request": buyer_request,
+        "min_price": min_price,
+        "max_price": max_price
+    })
+    fallback_sql, rows_loja_fallback = search_database(fallback_prompt)
+
     recommended_items = []
-    fallback_prompt = ""
-    fallback_sql = ""
+    for r in rows_loja_fallback:
+        try:
+            recommended_items.append({
+                "produto": r[0],
+                "tipo": r[1],
+                "qtd": int(r[2]),
+                "preco": float(r[3]),
+                "tamanho": r[4],
+                "material": r[5],
+                "estampa": r[6]
+            })
+        except (IndexError, ValueError):
+            pass
 
-    # 4B) Fallback if no exact match
-    if not exact_match_in_stock:
-        reference_price = 250.0
-        ignore_stock_query = f"""
-        SELECT produto, tipo, qtd, preco, tamanho, material, estampa
-        FROM loja_{store_number}
-        WHERE produto ILIKE '%{buyer_request}%' AND tipo ILIKE '%{buyer_request}%'
-        LIMIT 1
-        """
-        _, ignore_stock_rows = search_database(ignore_stock_query)
-        if ignore_stock_rows:
-            row0 = ignore_stock_rows[0]
-            try:
-                reference_price = float(row0[3])
-            except (IndexError, ValueError):
-                reference_price = 250.0
+    agent_cache[agent_id]["matching_items"] = recommended_items
+    return recommended_items
 
-        min_price = reference_price * 0.8
-        max_price = reference_price * 1.2
 
-        fallback_prompt = prompt_loja_fallback_chain.run({
-            "store_number": store_number,
-            "user_request": buyer_request,
-            "min_price": min_price,
-            "max_price": max_price
-        })
-        fallback_sql, rows_loja_fallback = search_database(fallback_prompt)
-        for r in rows_loja_fallback:
-            try:
-                recommended_items.append({
-                    "produto": r[0],
-                    "tipo": r[1],
-                    "qtd": int(r[2]),
-                    "preco": float(r[3]),
-                    "tamanho": r[4],
-                    "material": r[5],
-                    "estampa": r[6]
-                })
-            except (IndexError, ValueError):
-                continue
+#####################################################################
+# 6.2) Orchestrator Function (Optional)
+#####################################################################
+def multi_table_search(buyer_request: str, agent_id: str) -> str:
+    """
+    A high-level function that calls the above helpers.
+    Returns a textual summary (stock_info) of the results.
+    """
+    lines = []
+    try:
+        store_number = get_store_number(buyer_request, agent_id)
+        store_id = agent_cache[agent_id].get("store_id")
+        store_tipo = agent_cache[agent_id].get("store_tipo")
 
-    final_items = exact_match_in_stock if exact_match_in_stock else recommended_items
+        lines.append(f"Loja encontrada: ID={store_id}, tipo={store_tipo}, numero={store_number}")
 
-    # Step 5) Summaries
-    summary_lines = []
-    summary_lines.append("=== RESULTADO DA PESQUISA MULTI-TABELA ===\n")
-    summary_lines.append(f"Comprador quer: {buyer_request}\n")
-    summary_lines.append("LOJA ESCOLHIDA:")
-    summary_lines.append(f" - ID: {store_info['id']}, tipo: {store_info['tipo']}, numero: {store_info['numero']}")
-    summary_lines.append(f" - SQL p/ 'lojas': {sql_store}")
-    summary_lines.append("POSIÇÃO DA LOJA (x,y,z):")
-    if coords:
-        for c in coords:
-            summary_lines.append(f"   x={c['x']}, y={c['y']}, z={c['z']}")
-    else:
-        summary_lines.append("   (não encontrado)\n")
-    summary_lines.append(f"\nTABELA loja_{store_number} => SQL exato: {sql_loja}")
-    if not exact_match_in_stock:
-        summary_lines.append(f"(Sem match exato) => fallback prompt: {fallback_prompt}")
-        summary_lines.append(f"=> fallback SQL: {fallback_sql}")
+        coords = get_store_coordinates(store_number, agent_id)
+        if coords:
+            x, y, z = coords
+            lines.append(f"Posição da loja: x={x}, y={y}, z={z}")
+        else:
+            lines.append("Posição da loja não cadastrada")
 
-    if final_items:
-        summary_lines.append("Itens Disponíveis:")
-        for it in final_items:
-            summary_lines.append(
-                f"   - {it['produto']} ({it['tipo']}), "
-                f"tamanho={it['tamanho']}, material={it['material']}, estampa={it['estampa']}, "
-                f"qtd={it['qtd']}, R${it['preco']}"
-            )
-    else:
-        summary_lines.append("(Nenhum item encontrado ou recomendado)")
+        # Fetch matching or fallback items
+        final_items = get_matching_items(buyer_request, store_number, agent_id)
+        if final_items:
+            lines.append("Itens Disponíveis:")
+            for it in final_items:
+                lines.append(
+                    f"   - {it['produto']} ({it['tipo']}), "
+                    f"tamanho={it['tamanho']}, material={it['material']}, "
+                    f"estampa={it['estampa']}, qtd={it['qtd']}, R${it['preco']}"
+                )
+        else:
+            lines.append("(Nenhum item encontrado ou recomendado)")
 
-    return "\n".join(summary_lines)
+    except ValueError as e:
+        lines.append(f"Erro: {str(e)}")
+
+    return "\n".join(lines)
 
 
 #####################################################################
@@ -532,9 +559,18 @@ seller_chain = LLMChain(
 def start_application():
     """
     Called once at the start of the Unity Client to 'initialize' if needed.
+    Clears the buyer memory and also clears the agent cache for that user.
     """
+    data = request.get_json()
+    agent_id = data.get("agent_id", "default_agent")
+
+    # Clear global conversation memory
     buyer_memory.clear()
-    return jsonify({"response": "Application started! Buyer memory cleared."})
+
+    # Clear server-side cache for this agent
+    agent_cache[agent_id].clear()
+
+    return jsonify({"response": f"Application started! Buyer memory cleared for agent_id={agent_id}."})
 
 
 @app.route('/request/guide', methods=['POST'])
@@ -543,68 +579,48 @@ def guide_request():
     Endpoint for the "guide" logic:
     The Unity 'Client' might say: "Estou procurando o produto X"
     This endpoint finds the store in 'lojas' and the store position in 'posicao'.
-    
-    We now use prompt_generator_chain + search_database 
-    to let the LLM figure out the 'tipo' or relevant columns in 'lojas'.
     """
     data = request.get_json()
-    print(data)
     buyer_request = data.get("prompt", "")
+    agent_id = data.get("agent_id", "default_agent")
 
-    # 1) Use prompt_generator_chain to produce a "lojas" query in PT-BR
-    prompt_for_lojas = prompt_generator_chain.run({"user_request": buyer_request})
-    # 2) Pass that to search_database
-    sql_store, rows_store = search_database(prompt_for_lojas)
-    if not rows_store:
-        return jsonify({"response": "Nenhuma loja encontrada para esse item."})
+    try:
+        store_number = get_store_number(buyer_request, agent_id)
+        store_id = agent_cache[agent_id].get("store_id")
+        store_tipo = agent_cache[agent_id].get("store_tipo")
 
-    # pick first row with a valid store_num
-    store_id, store_tipo, store_num = None, None, None
-    for row in rows_store:
-        # row is (id, tipo, numero)
-        try:
-            temp_num = int(row[2])
-            store_id = row[0]
-            store_tipo = row[1]
-            store_num = temp_num
-            break
-        except:
-            continue
+        coords = get_store_coordinates(store_number, agent_id)
+        if coords:
+            x, y, z = coords
+            text_response = (
+                f"Loja encontrada: id={store_id}, tipo='{store_tipo}', número={store_number}. "
+                f"Localização: x={x}, y={y}, z={z}."
+            )
+        else:
+            text_response = (
+                f"Loja encontrada: id={store_id}, tipo='{store_tipo}', número={store_number}, "
+                "mas posição não cadastrada."
+            )
+        return jsonify({"response": text_response})
 
-    if store_num is None:
-        return jsonify({"response": "Nenhuma loja com número válido encontrada."})
-
-    # get the position (posicao table)
-    sql_pos, rows_pos = search_database(
-        f"Na tabela 'posicao', retorne x,y,z onde numero = {store_num}."
-    )
-    if not rows_pos:
-        return jsonify({
-            "response": f"Loja {store_num} encontrada (tipo={store_tipo}), mas posição não cadastrada."
-        })
-
-    x, y, z = rows_pos[0]
-    text_response = (
-        f"Loja encontrada: tipo '{store_tipo}' número {store_num}. "
-        f"Localização: x={x}, y={y}, z={z}."
-    )
-    return jsonify({"response": text_response})
+    except ValueError as e:
+        return jsonify({"response": str(e)})
 
 
 @app.route('/request/store', methods=['POST'])
 def store_request():
     """
     Endpoint for the "store/seller" logic:
-    The user (client) says something like "Quero comprar Camiseta branca"
-    We'll do the multi_table_search to see what's in stock, then pass that info
-    to the seller chain for a final response.
+    The user says something like "Quero comprar Camiseta branca"
+    We'll do the multi_table_search to see what's in stock, 
+    then pass that info to the seller chain for a final response.
     """
     data = request.get_json()
     prompt = data.get("prompt", "")
-    # speaker = data.get("speaker", "")  # Typically 'client' – unused here
+    agent_id = data.get("agent_id", "default_agent")
 
     # 1) multi_table_search to get inventory details
-    stock_info = multi_table_search(prompt)
+    stock_info = multi_table_search(prompt, agent_id)
 
     # 2) feed that into the seller chain
     seller_response = seller_chain.run(
@@ -613,7 +629,7 @@ def store_request():
         history=buyer_memory.load_memory_variables({})["history"]
     )
 
-    # Save the seller's response in buyer memory, so next Buyer turn can refer to it
+    # Save the seller's response in buyer memory
     buyer_memory.save_context({"input": ""}, {"output": seller_response})
 
     return jsonify({"response": seller_response})
@@ -624,28 +640,33 @@ def client_request():
     """
     Endpoint for the "client/buyer" logic:
     If your Unity code wants to have the Buyer respond to the last Seller message,
-    call this with the JSON: { "prompt": "...", "speaker": "seller" } for example.
+    call this with JSON: { "prompt": "Seller's last message", "agent_id": "..."}
     """
     data = request.get_json()
     prompt = data.get("prompt", "")
-
+    agent_id = data.get("agent_id", "default_agent")
+    
     # We'll treat the prompt as "seller_utterance" (the last message from the store).
     buyer_reply = buyer_chain.run(seller_utterance=prompt)
     return jsonify({"response": buyer_reply})
+
 
 @app.route('/resumoOferta', methods=['POST'])
 def resumo_oferta():
     """
     Gera um resumo amigável da conversa usando o histórico do buyer.
     """
+    data = request.get_json()
+    agent_id = data.get("agent_id", "default_agent")
+
     history = buyer_memory.load_memory_variables({}).get("history", [])
 
-    # Se quiser visualizar o histórico completo:
+    # Debug: print the conversation so far
     print("=== Histórico da conversa ===")
     for msg in history:
         print(f"{msg.type.upper()}: {msg.content}")
 
-    # Cria um prompt de resumo
+    # Create a short summarizing prompt
     resumo_prompt = ChatPromptTemplate.from_messages([
         SystemMessagePromptTemplate.from_template(
             "Você é um assistente que resume uma conversa de compra em uma frase clara e amigável para o usuário final. Você DEVE retornar o valor do produto que o usuário deseja."
@@ -666,8 +687,6 @@ def resumo_oferta():
     resumo = chain.run(conversa=conversa_texto)
 
     return jsonify({"response": resumo})
-
-
 
 
 if __name__ == '__main__':
