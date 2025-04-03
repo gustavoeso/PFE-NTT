@@ -27,7 +27,7 @@ app = Flask(__name__)
 # 1) ENV Setup + LLM
 #####################################################################
 api_key = os.getenv("OPENAI_API_KEY")
-model_name = os.getenv("OPENAI_MODEL_NAME", "gpt-4")
+model_name = os.getenv("OPENAI_MODEL_NAME", "gpt-4o")
 
 # Base LLM for conversation
 openai_llm = ChatOpenAI(
