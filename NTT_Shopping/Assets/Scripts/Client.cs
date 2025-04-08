@@ -221,14 +221,18 @@ public class Client : Agent
                 if (confirmada)
                 {
                     Debug.Log("[Humano] Confirmou a decisão.");
+                    Dialogue.Instance.StartDialogue("Vou Levar o Produto. Muito Obrigado!", true);
+                    await TTSManager.Instance.SpeakAsync("Não Vou Levar o Produto. Muito Obrigado!", TTSManager.Instance.voiceGuide);
                     Dialogue.Instance.CloseDialogue();
                     GoToExit();
                 }
                 else
                 {
-                    Debug.Log("[Humano] Cancelou a decisão. Continuando a conversa...");
-                    Dialogue.Instance.StartDialogue("Na verdade, mudei de ideia. Pode continuar explicando?", true);
-                    await TTSManager.Instance.SpeakAsync("Na verdade, mudei de ideia. Pode continuar explicando?", TTSManager.Instance.voiceClient);
+                    Debug.Log("[Humano] Recusou a decisão.");
+                    Dialogue.Instance.StartDialogue("Não vou levar o produto. Muito Obrigado!", true);
+                    await TTSManager.Instance.SpeakAsync("Não Vou Levar o Produto. Muito Obrigado!", TTSManager.Instance.voiceGuide);
+                    Dialogue.Instance.CloseDialogue();
+                    GoToExit();
                 }
 
                 return;
