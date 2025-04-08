@@ -4,12 +4,6 @@ using UnityEngine.AI;
 using UnityEngine.Networking;
 using System.Text.RegularExpressions;
 
-[System.Serializable]
-public class ApiResponse
-{
-    public string response;
-}
-
 public class Client : Agent
 {
     public bool canCollide = true;
@@ -23,8 +17,7 @@ public class Client : Agent
     private bool hasTalkedToStore = false;
     private bool storeConversationInProgress = false;
     private bool isLeavingStore = false;
-
-    private TaskCompletionSource<bool> decisionResult = null;
+    private bool finalOffer = false;
     private Store targetStore = null;
 
     protected override async void Start()
@@ -202,17 +195,11 @@ public class Client : Agent
             Dialogue.Instance.StartDialogue(buyerMessage, true);
             await TTSManager.Instance.SpeakAsync(buyerMessage, TTSManager.Instance.voiceClient);
 
-            if (BuyerHasDecided(buyerMessage))
-            {
-                Debug.Log($"[Buyer] Decisão final (antes da loja responder): {buyerMessage}");
-                Dialogue.Instance.CloseDialogue();
-                GoToExit();
-                return;
-            }
-
             // Buyer -> store
             string storeJson = await SendPrompt(buyerMessage, "store", "client");
             string storeMessage = ExtractResponse(storeJson);
+            finalOffer = ExtractFinalOffer(storeJson);
+            Debug.Log($"[Store Wants to Stop] {finalOffer}");
             Debug.Log($"[Store -> Buyer] {storeMessage}");
 
             Dialogue.Instance.StartDialogue(storeMessage, false);
@@ -223,7 +210,7 @@ public class Client : Agent
             buyerMessage = ExtractResponse(buyerJson);
             Debug.Log($"[Buyer -> Store] {buyerMessage}");
 
-            if (BuyerHasDecided(buyerMessage))
+            if (finalOffer)
             {
                 Debug.Log($"[Buyer] Decisão detectada: {buyerMessage}");
 
@@ -250,7 +237,7 @@ public class Client : Agent
 
         Debug.LogWarning("[Client] Conversa atingiu o limite de turnos sem decisão. Forçando decisão...");
 
-        string forcedDecision = "Vou levar";
+        string forcedDecision = "Estou a muito tempo aqui, perdi o interesse. Obrigado!";
         Dialogue.Instance.StartDialogue(forcedDecision, true);
         await TTSManager.Instance.SpeakAsync(forcedDecision, TTSManager.Instance.voiceClient);
 
@@ -269,12 +256,6 @@ public class Client : Agent
             navMeshAgent.speed = speed;
             navMeshAgent.SetDestination(exitPosition);
         }
-    }
-
-    private bool BuyerHasDecided(string text)
-    {
-        string check = text.ToLower().Replace(".", "").Replace("!", "").Replace("?", "");
-        return check.Contains("vou levar") || check.Contains("não vou levar") || check.Contains("nao vou levar");
     }
 
     protected Store FindStore(string storeID)
@@ -308,14 +289,6 @@ public class Client : Agent
         return Regex.Replace(text, @"[^\d]", "");
     }
 
-    private string ExtractResponse(string json)
-    {
-        if (string.IsNullOrEmpty(json)) return "";
-        ApiResponse respObject = JsonUtility.FromJson<ApiResponse>(json);
-        if (respObject == null) return "";
-        return respObject.response;
-    }
-
     public void StopImmediately()
     {
         navMeshAgent.isStopped = true;
@@ -342,8 +315,8 @@ public class Client : Agent
             }
 
             string responseText = request.downloadHandler.text;
-            ApiResponse response = JsonUtility.FromJson<ApiResponse>(responseText);
-            return response.response;
+            AgentResponse response = JsonUtility.FromJson<AgentResponse>(responseText);
+            return response.answer;
         }
     }
 }

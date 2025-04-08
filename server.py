@@ -12,12 +12,14 @@ from langchain.prompts import (
     HumanMessagePromptTemplate,
     PromptTemplate
 )
+from langchain_core.output_parsers import PydanticOutputParser
 from langchain.chains import LLMChain
 from langchain.memory import ConversationBufferMemory
 
 from sqlalchemy import create_engine, text
 from langchain_experimental.sql import SQLDatabaseChain
 from langchain_community.utilities import SQLDatabase
+from pydantic import BaseModel
 
 load_dotenv()
 
@@ -452,14 +454,21 @@ def multi_table_search(buyer_request: str, agent_id: str) -> str:
 #####################################################################
 # 7) BuyerChain & SellerChain
 #####################################################################
+
+class AgentResponse(BaseModel):
+    answer: str
+    final_offer: bool
+
+parser = PydanticOutputParser(pydantic_object=AgentResponse)
+
+########################################
+# BuyerChain
+########################################
 buyer_memory = ConversationBufferMemory(
     memory_key="history",
     return_messages=True
 )
 
-########################################
-# BuyerChain
-########################################
 buyer_system_template = """
 Você é o Buyer (comprador) em uma loja no shopping.
 Não se identifique como IA.
@@ -475,7 +484,11 @@ Objetivo:
 
 Histórico da conversa até agora:
 {history}
+
+Responda com um JSON contendo os campos:
+{format_instructions}
 """
+
 
 buyer_human_template = """
 A última fala do Vendedor (Seller) foi:
@@ -492,6 +505,7 @@ buyer_human_msg = HumanMessagePromptTemplate.from_template(buyer_human_template)
 
 buyer_prompt = ChatPromptTemplate(
     input_variables=["history", "seller_utterance"],
+    partial_variables={"format_instructions": parser.get_format_instructions()},
     messages=[buyer_system_msg, buyer_human_msg]
 )
 
@@ -524,6 +538,13 @@ Estoque disponível (buscado com multi-table logic):
 
 Histórico da conversa até agora:
 {history}
+
+Responda com um JSON contendo os campos:
+{format_instructions}
+
+Em final_offer, responda se a resposta é uma oferta conclusiva para o comprador decidir em relação ao produto.
+- Se for uma oferta, use "final_offer": true.
+- Se não for uma oferta, use "final_offer": false.
 """
 
 seller_human_template = """
@@ -541,8 +562,10 @@ seller_human_msg = HumanMessagePromptTemplate.from_template(seller_human_templat
 
 seller_prompt = ChatPromptTemplate(
     input_variables=["history", "buyer_utterance", "stock_info"],
+    partial_variables={"format_instructions": parser.get_format_instructions()},
     messages=[seller_system_msg, seller_human_msg]
 )
+
 
 seller_chain = LLMChain(
     llm=openai_llm,
@@ -572,14 +595,8 @@ def start_application():
 
     return jsonify({"response": f"Application started! Buyer memory cleared for agent_id={agent_id}."})
 
-
 @app.route('/request/guide', methods=['POST'])
 def guide_request():
-    """
-    Endpoint for the "guide" logic:
-    The Unity 'Client' might say: "Estou procurando o produto X"
-    This endpoint finds the store in 'lojas' and the store position in 'posicao'.
-    """
     data = request.get_json()
     buyer_request = data.get("prompt", "")
     agent_id = data.get("agent_id", "default_agent")
@@ -592,29 +609,25 @@ def guide_request():
         coords = get_store_coordinates(store_number, agent_id)
         if coords:
             x, y, z = coords
-            text_response = (
+            answer = (
                 f"Loja encontrada: id={store_id}, tipo='{store_tipo}', número={store_number}. "
                 f"Localização: x={x}, y={y}, z={z}."
             )
         else:
-            text_response = (
+            answer = (
                 f"Loja encontrada: id={store_id}, tipo='{store_tipo}', número={store_number}, "
                 "mas posição não cadastrada."
             )
-        return jsonify({"response": text_response})
+
+        response = AgentResponse(answer=answer, final_offer=False)
+        return jsonify(response.dict())
 
     except ValueError as e:
-        return jsonify({"response": str(e)})
-
+        response = AgentResponse(answer=str(e), final_offer=True)
+        return jsonify(response.dict())
 
 @app.route('/request/store', methods=['POST'])
 def store_request():
-    """
-    Endpoint for the "store/seller" logic:
-    The user says something like "Quero comprar Camiseta branca"
-    We'll do the multi_table_search to see what's in stock, 
-    then pass that info to the seller chain for a final response.
-    """
     data = request.get_json()
     prompt = data.get("prompt", "")
     agent_id = data.get("agent_id", "default_agent")
@@ -622,34 +635,31 @@ def store_request():
     # 1) multi_table_search to get inventory details
     stock_info = multi_table_search(prompt, agent_id)
 
-    # 2) feed that into the seller chain
-    seller_response = seller_chain.run(
+    # 2) Get response from seller_chain (structured as JSON)
+    seller_response_raw = seller_chain.run(
         buyer_utterance=prompt,
         stock_info=stock_info,
         history=buyer_memory.load_memory_variables({})["history"]
     )
+    seller_response = parser.parse(seller_response_raw)
 
-    # Save the seller's response in buyer memory
-    buyer_memory.save_context({"input": ""}, {"output": seller_response})
+    # 3) Save only the answer in memory
+    buyer_memory.save_context({"input": ""}, {"output": seller_response.answer})
 
-    return jsonify({"response": seller_response})
+    return jsonify(seller_response.dict())
 
 
 @app.route('/request/client', methods=['POST'])
 def client_request():
-    """
-    Endpoint for the "client/buyer" logic:
-    If your Unity code wants to have the Buyer respond to the last Seller message,
-    call this with JSON: { "prompt": "Seller's last message", "agent_id": "..."}
-    """
     data = request.get_json()
     prompt = data.get("prompt", "")
     agent_id = data.get("agent_id", "default_agent")
-    
-    # We'll treat the prompt as "seller_utterance" (the last message from the store).
-    buyer_reply = buyer_chain.run(seller_utterance=prompt)
-    return jsonify({"response": buyer_reply})
 
+    # Prompt é a fala do Seller
+    buyer_response_raw = buyer_chain.run(seller_utterance=prompt)
+    buyer_response = parser.parse(buyer_response_raw)
+
+    return jsonify(buyer_response.dict())
 
 @app.route('/resumoOferta', methods=['POST'])
 def resumo_oferta():
@@ -686,7 +696,7 @@ def resumo_oferta():
 
     resumo = chain.run(conversa=conversa_texto)
 
-    return jsonify({"response": resumo})
+    return jsonify({"answer": resumo})
 
 
 if __name__ == '__main__':

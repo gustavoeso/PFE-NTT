@@ -82,7 +82,7 @@ public class Agent : MonoBehaviour
         }
     }
 
-    // Extrai a resposta do JSON retornado pela API
+        // Extrai a resposta do JSON retornado pela API
     protected string ExtractResponse(string jsonResponse)
     {
         if (string.IsNullOrEmpty(jsonResponse))
@@ -92,8 +92,8 @@ public class Agent : MonoBehaviour
 
         try
         {
-            ResponseData data = JsonUtility.FromJson<ResponseData>(jsonResponse);
-            return data.response ?? "Chave 'response' não encontrada";
+            AgentResponse data = JsonUtility.FromJson<AgentResponse>(jsonResponse);
+            return data.answer ?? "Chave 'answer' não encontrada";
         }
         catch (System.Exception e)
         {
@@ -101,13 +101,32 @@ public class Agent : MonoBehaviour
             return "Erro na formatação do JSON";
         }
     }
+
+    protected bool ExtractFinalOffer(string jsonResponse)
+    {
+        if (string.IsNullOrEmpty(jsonResponse)) return false;
+
+        try
+        {
+            AgentResponse data = JsonUtility.FromJson<AgentResponse>(jsonResponse);
+            return data.final_offer;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+
 }
 
 [System.Serializable]
-public class ResponseData
+public class AgentResponse
 {
-    public string response;
+    public string answer;
+    public bool final_offer;
 }
+
 
 // Updated PromptData to include agent_id
 [System.Serializable]
