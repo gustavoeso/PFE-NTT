@@ -31,6 +31,27 @@ app = Flask(__name__)
 api_key = os.getenv("OPENAI_API_KEY")
 model_name = os.getenv("OPENAI_MODEL_NAME", "gpt-4o")
 
+"""
+Mudança para uso do openrouter.ai:
+
+def get_llm(model_name=None, temperature=0.3):
+    return ChatOpenAI(
+        model_name=model_name or os.getenv("OPENAI_MODEL_NAME", "gpt-4o"),
+        openai_api_key=os.getenv("OPENAI_API_KEY"),
+        openai_api_base=os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1"),
+        temperature=temperature
+    )
+
+openai_llm = get_llm(temperature=0.3)
+
+llm_for_sql = get_llm(temperature=0.0)
+
+#exemplo de uso:
+claude_llm = get_llm("anthropic/claude-3-opus", temperature=0.3)
+mixtral = get_llm("mistralai/mixtral-8x7b")
+
+"""
+
 # Base LLM for conversation
 openai_llm = ChatOpenAI(
     model_name=model_name,
