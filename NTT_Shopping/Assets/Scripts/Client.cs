@@ -120,7 +120,7 @@ public class Client : Agent
             string prompt = "Estou procurando o produto: " + requestedItem;
 
             Dialogue.Instance.InitializeDialogue("client", "guide");
-            Dialogue.Instance.StartDialogue(prompt, true);
+            await Dialogue.Instance.StartDialogue(prompt, true);
             await TTSManager.Instance.SpeakAsync(prompt, TTSManager.Instance.voiceClient);
 
             // (2) Buyer -> guide endpoint
@@ -128,7 +128,7 @@ public class Client : Agent
             string guideAnswer = ExtractResponse(guideJson);
             Debug.Log("[Client] guideAnswer=" + guideAnswer);
 
-            Dialogue.Instance.StartDialogue(guideAnswer, false);
+            await Dialogue.Instance.StartDialogue(guideAnswer, false);
             await TTSManager.Instance.SpeakAsync(guideAnswer, TTSManager.Instance.voiceGuide);
             Dialogue.Instance.CloseDialogue();
 
@@ -192,7 +192,7 @@ public class Client : Agent
         {
             Debug.Log($"[Client] Turno {turn + 1} de {maxTurns}");
 
-            Dialogue.Instance.StartDialogue(buyerMessage, true);
+            await Dialogue.Instance.StartDialogue(buyerMessage, true);
             await TTSManager.Instance.SpeakAsync(buyerMessage, TTSManager.Instance.voiceClient);
 
             // Buyer -> store
@@ -202,7 +202,7 @@ public class Client : Agent
             Debug.Log($"[Store Wants to Stop] {finalOffer}");
             Debug.Log($"[Store -> Buyer] {storeMessage}");
 
-            Dialogue.Instance.StartDialogue(storeMessage, false);
+            await Dialogue.Instance.StartDialogue(storeMessage, false);
             await TTSManager.Instance.SpeakAsync(storeMessage, TTSManager.Instance.voiceGuide);
 
             // Then store -> buyer
@@ -221,7 +221,7 @@ public class Client : Agent
                 if (confirmada)
                 {
                     Debug.Log("[Humano] Confirmou a decisão.");
-                    Dialogue.Instance.StartDialogue("Vou Levar o Produto. Muito Obrigado!", true);
+                    await Dialogue.Instance.StartDialogue("Vou Levar o Produto. Muito Obrigado!", true);
                     await TTSManager.Instance.SpeakAsync("Não Vou Levar o Produto. Muito Obrigado!", TTSManager.Instance.voiceGuide);
                     Dialogue.Instance.CloseDialogue();
                     GoToExit();
@@ -229,7 +229,7 @@ public class Client : Agent
                 else
                 {
                     Debug.Log("[Humano] Recusou a decisão.");
-                    Dialogue.Instance.StartDialogue("Não vou levar o produto. Muito Obrigado!", true);
+                    await Dialogue.Instance.StartDialogue("Não vou levar o produto. Muito Obrigado!", true);
                     await TTSManager.Instance.SpeakAsync("Não Vou Levar o Produto. Muito Obrigado!", TTSManager.Instance.voiceGuide);
                     Dialogue.Instance.CloseDialogue();
                     GoToExit();
@@ -242,7 +242,7 @@ public class Client : Agent
         Debug.LogWarning("[Client] Conversa atingiu o limite de turnos sem decisão. Forçando decisão...");
 
         string forcedDecision = "Estou a muito tempo aqui, perdi o interesse. Obrigado!";
-        Dialogue.Instance.StartDialogue(forcedDecision, true);
+        await Dialogue.Instance.StartDialogue(forcedDecision, true);
         await TTSManager.Instance.SpeakAsync(forcedDecision, TTSManager.Instance.voiceClient);
 
         Dialogue.Instance.CloseDialogue();

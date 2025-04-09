@@ -8,6 +8,9 @@ public class TTSManager : MonoBehaviour
 {
     public static TTSManager Instance;
 
+    [Header("Controle de voz")]
+    public bool ttsEnabled = false;
+
     [Header("Voices disponíveis")]
     public string voiceClient = "shimmer";
     public string voiceGuide = "alloy";
@@ -37,6 +40,12 @@ public class TTSManager : MonoBehaviour
 
     public async Task SpeakAsync(string text, string voice)
     {
+        if (!ttsEnabled)
+        {
+            Debug.Log($"[TTS] TTS desativado. Texto: {text}");
+            return;
+        }
+
         var tempFilePath = await GenerateSpeechFile(text, voice);
 
         if (!string.IsNullOrEmpty(tempFilePath))

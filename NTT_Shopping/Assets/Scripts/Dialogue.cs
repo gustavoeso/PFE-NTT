@@ -2,6 +2,8 @@ using UnityEngine;
 using TMPro;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+
 
 public class Dialogue : MonoBehaviour
 {
@@ -22,6 +24,9 @@ public class Dialogue : MonoBehaviour
     private Dictionary<string, GameObject> characterMap;
     private GameObject leftCharacterInstance;
     private GameObject rightCharacterInstance;
+
+
+    private TaskCompletionSource<bool> dialogueFinishedTCS;
 
     private void Awake()
     {
@@ -61,15 +66,18 @@ public class Dialogue : MonoBehaviour
         gameObject.SetActive(true);
     }
 
-    public void StartDialogue(string sentence, bool isLeftCharacterTalking)
+    public Task StartDialogue(string sentence, bool isLeftCharacterTalking)
     {
         textDisplay.text = "";
         textDisplay.pageToDisplay = 1;
 
         UpdateCharacterVisual(isLeftCharacterTalking);
 
+        dialogueFinishedTCS = new TaskCompletionSource<bool>();
         StartCoroutine(TypeLine(sentence));
+        return dialogueFinishedTCS.Task;
     }
+
 
     private void UpdateCharacterVisual(bool isLeftCharacterTalking)
     {
@@ -128,7 +136,10 @@ public class Dialogue : MonoBehaviour
 
             yield return new WaitForSeconds(typingSpeed);
         }
+
+        dialogueFinishedTCS?.TrySetResult(true);
     }
+
 
     public void CloseDialogue()
     {
