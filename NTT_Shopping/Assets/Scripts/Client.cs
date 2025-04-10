@@ -3,6 +3,10 @@ using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Networking;
 using System.Text.RegularExpressions;
+using System.Collections;   // Necessário para IEnumerator
+using System.Collections.Generic; // Se precisar de listas
+using System.Text;          // Necessário para Encoding
+
 
 public class Client : Agent
 {
@@ -11,7 +15,7 @@ public class Client : Agent
     private Rigidbody rb;
     public float speed = 2.0f;
     private string requestedItem = "Camiseta branca";
-
+    private float maxPriceWanted = 0.0f;
     private bool hasAskedGuide = false;
     private bool onWayToStore = false;
     private bool hasTalkedToStore = false;
@@ -19,29 +23,32 @@ public class Client : Agent
     private bool isLeavingStore = false;
     private bool finalOffer = false;
     private Store targetStore = null;
+    public bool startMovement = false;
 
     protected override async void Start()
     {
-        // Call base Start() first to generate myAgentId
         base.Start();
         rb = GetComponent<Rigidbody>();
         rb.isKinematic = true;
 
-        // (1) Immediately send /startApplication with agent_id in the JSON
+        // (1) Inicializa sem mover
+        // Ativa /startApplication do servidor se quiser manter
         await CallStartApplication();
 
-        GameObject guide = GameObject.FindGameObjectWithTag("Guide");
-        if (guide != null && navMeshAgent != null)
-        {
-            navMeshAgent.isStopped = false;
-            navMeshAgent.speed = speed;
-            navMeshAgent.stoppingDistance = 1.2f;
-            navMeshAgent.SetDestination(guide.transform.position);
-        }
+        // Deixa o navMeshAgent "parado" aqui
+        // navMeshAgent.isStopped = true;
+        // ou simplesmente não seta destino ainda.
     }
 
     void Update()
     {
+            if (!startMovement)
+        {
+            // Se não pode se mover, garantir que navMeshAgent.isStopped = true;
+            navMeshAgent.isStopped = true;
+            return;
+        }
+
         float curSpeed = navMeshAgent.velocity.magnitude;
         animator.SetFloat("Speed", curSpeed);
 
@@ -321,6 +328,75 @@ public class Client : Agent
             string responseText = request.downloadHandler.text;
             AgentResponse response = JsonUtility.FromJson<AgentResponse>(responseText);
             return response.answer;
+        }
+    }
+
+    public void SetDesiredPurchase(string desiredItem, float maxPrice){
+        // Guardar em variáveis
+        this.requestedItem = desiredItem;
+        this.maxPriceWanted = maxPrice;
+
+        StartCoroutine(SendBuyerPreferencesToServer(requestedItem, maxPriceWanted));
+    }
+
+    public void BeginMovement(){
+        // Agora sim, definimos que pode começar a andar
+        startMovement = true;
+        
+        // Se quiser imediatamente mandar o comprador falar com o Guia:
+        GameObject guide = GameObject.FindGameObjectWithTag("Guide");
+        if (guide != null && navMeshAgent != null)
+        {
+            navMeshAgent.isStopped = false;
+            navMeshAgent.speed = speed;
+            navMeshAgent.stoppingDistance = 1.2f;
+            navMeshAgent.SetDestination(guide.transform.position);
+        }
+
+        Debug.Log("[Client] Movimentação iniciada (BeginMovement)");
+    }
+
+    [System.Serializable]
+    public class PreferencesData
+    {
+        public string agent_id;
+        public string desired_item;
+        public float max_price;
+    }
+    public IEnumerator SendBuyerPreferencesToServer(string item, float price) {
+        string url = "http://localhost:8000/setBuyerPreferences";
+
+        // 1) Instancie a classe
+        PreferencesData bodyObj = new PreferencesData() {
+            agent_id = myAgentId,       // <--- certifique-se que 'myAgentId' não está vazio
+            desired_item = item,
+            max_price = price
+        };
+
+        // 2) Use JsonUtility normalmente
+        string json = JsonUtility.ToJson(bodyObj);
+
+        // Debug para ver o que vai pro servidor
+        Debug.Log("[SendBuyerPreferencesToServer] JSON: " + json);
+
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
+
+        using (UnityWebRequest www = new UnityWebRequest(url, "POST"))
+        {
+            www.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            www.downloadHandler = new DownloadHandlerBuffer();
+            www.SetRequestHeader("Content-Type", "application/json");
+
+            yield return www.SendWebRequest();
+
+            if (www.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("Erro ao enviar preferências: " + www.error);
+            }
+            else
+            {
+                Debug.Log("Preferências do Buyer enviadas com sucesso!");
+            }
         }
     }
 }

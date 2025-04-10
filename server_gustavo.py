@@ -31,27 +31,6 @@ app = Flask(__name__)
 api_key = os.getenv("OPENAI_API_KEY")
 model_name = os.getenv("OPENAI_MODEL_NAME", "gpt-4o")
 
-"""
-Mudança para uso do openrouter.ai:
-
-def get_llm(model_name=None, temperature=0.3):
-    return ChatOpenAI(
-        model_name=model_name or os.getenv("OPENAI_MODEL_NAME", "gpt-4o"),
-        openai_api_key=os.getenv("OPENAI_API_KEY"),
-        openai_api_base=os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1"),
-        temperature=temperature
-    )
-
-openai_llm = get_llm(temperature=0.3)
-
-llm_for_sql = get_llm(temperature=0.0)
-
-#exemplo de uso:
-claude_llm = get_llm("anthropic/claude-3-opus", temperature=0.3)
-mixtral = get_llm("mistralai/mixtral-8x7b")
-
-"""
-
 # Base LLM for conversation
 openai_llm = ChatOpenAI(
     model_name=model_name,
@@ -89,7 +68,6 @@ TABLE `posicao`:
   - y (integer)
   - z (integer)
 
-
 TABLE `loja_100`:
     id SERIAL PRIMARY KEY,
     produto VARCHAR(50),
@@ -102,11 +80,11 @@ TABLE `loja_100`:
 
 TABLE `loja_105`:
     id SERIAL PRIMARY KEY,
-    produto VARCHAR(100), --> name of the game
-    tipo VARCHAR(50),     --> category of the game
-    qtd INT,              --> quantity in stock
-    preco DECIMAL(10,2),  --> price
-    console VARCHAR(50)   --> console name
+    produto VARCHAR(100),
+    tipo VARCHAR(50),
+    qtd INT,
+    preco DECIMAL(10,2),
+    console VARCHAR(50)
 
 No other `loja_{{n}}` tables exist.
 
@@ -125,7 +103,6 @@ No triple backticks or extra text. No explanations. Just the query.
 User Question: {input}
 SQLQuery:
 """
-
 
 sql_prompt = PromptTemplate(
     input_variables=["input"],
@@ -147,8 +124,6 @@ def search_database(nl_query: str):
     """
     Use the sql_chain to turn natural language into SQL, then execute it.
     Returns (sql_text, rows).
-
-    Also sanitizes the output to remove triple backticks or "SQLQuery:".
     """
     try:
         chain_output = sql_chain.invoke({"query": nl_query})
@@ -157,7 +132,6 @@ def search_database(nl_query: str):
         return ("", [])
 
     print(f"[search_database] Chain output: {chain_output}")
-
     raw_result = chain_output.get("result", "")
     if not raw_result:
         return ("", [])
@@ -186,7 +160,7 @@ def search_database(nl_query: str):
 #####################################################################
 # 5) Additional LLM Chains (PromptGenerator, etc.) for Multi-Table
 #####################################################################
-# This chain helps produce a text query for `lojas` in Portuguese
+# Gera texto de query para a tabela 'lojas'
 prompt_generator_prompt = PromptTemplate(
     input_variables=["user_request"],
     template="""
@@ -207,6 +181,7 @@ Explique brevemente qual 'tipo' corresponde ao que o comprador quer.
 Retorne APENAS o texto que o pesquisador usará, sem explicações adicionais.
 """
 )
+
 prompt_generator_chain = LLMChain(
     llm=llm_for_sql,
     prompt=prompt_generator_prompt,
@@ -218,7 +193,7 @@ prompt_loja_prompt = PromptTemplate(
     template="""
 Você é um especialista em mapear o pedido do comprador para uma consulta na tabela 'loja_{store_number}'.
 
-A tabela 'loja_{store_number}' tem colunas: 
+A tabela 'loja_{store_number}' tem colunas:
   - produto (texto)
   - tipo (texto)
   - qtd (inteiro)
@@ -229,7 +204,7 @@ A tabela 'loja_{store_number}' tem colunas:
 
 O comprador quer: "{user_request}"
 
-Por exemplo, uma Camiseta Verde ficaria assim na tabela da loja_100:
+Por exemplo, uma Camiseta Verde ficaria assim:
 -produto = 'Camiseta'
 -tipo = 'Verde'
 -qtd = 10
@@ -237,7 +212,6 @@ Por exemplo, uma Camiseta Verde ficaria assim na tabela da loja_100:
 -tamanho = 'M'
 -material = 'Algodão'
 -estampa = 'Sim'
-
 
 Gere UMA LINHA de texto (em português) no formato:
 
@@ -248,6 +222,7 @@ Use a string do "user_request" no lugar de "...".
 Retorne SOMENTE a linha final, sem explicações adicionais.
 """
 )
+
 prompt_loja_chain = LLMChain(
     llm=llm_for_sql,
     prompt=prompt_loja_prompt,
@@ -267,6 +242,7 @@ ORDER BY preco ASC;
 Retorne SOMENTE a linha final, sem explicações.
 """
 )
+
 prompt_loja_fallback_chain = LLMChain(
     llm=llm_for_sql,
     prompt=prompt_loja_fallback,
@@ -274,13 +250,8 @@ prompt_loja_fallback_chain = LLMChain(
 )
 
 #####################################################################
-# 6) Server-Side Cache (New)
+# 6) Server-Side Cache
 #####################################################################
-# Key: agent_id (or user_id) string
-# Value: A dict with possible keys:
-#   - store_number, store_id, store_tipo
-#   - store_position
-#   - matching_items
 agent_cache = defaultdict(dict)
 
 #####################################################################
@@ -288,17 +259,10 @@ agent_cache = defaultdict(dict)
 #####################################################################
 
 def get_store_number(buyer_request: str, agent_id: str) -> int:
-    """
-    1. Check if 'store_number' is cached for this agent_id.
-    2. If not cached, run prompt_generator_chain + search_database to find the store.
-    3. Cache the store_number, store_id, store_tipo.
-    4. Return the store_number.
-    """
-    # If we already have a store_number, return it
+    # Se já temos store_number, retorna
     if "store_number" in agent_cache[agent_id]:
         return agent_cache[agent_id]["store_number"]
-    
-    # Otherwise, generate a query for 'lojas' using the LLM
+
     prompt_for_lojas = prompt_generator_chain.run({"user_request": buyer_request})
     sql_store, rows_store = search_database(prompt_for_lojas)
 
@@ -307,7 +271,7 @@ def get_store_number(buyer_request: str, agent_id: str) -> int:
 
     store_row = None
     for r in rows_store:
-        # row is (id, tipo, numero)
+        # (id, tipo, numero)
         try:
             temp_num = int(r[2])
             store_row = r
@@ -325,17 +289,10 @@ def get_store_number(buyer_request: str, agent_id: str) -> int:
 
     return store_num
 
-
 def get_store_coordinates(store_number: int, agent_id: str):
-    """
-    1. Checks if 'store_position' is cached.
-    2. If not, queries 'posicao' table for x, y, z.
-    3. Caches the result and returns (x, y, z) or None.
-    """
     if "store_position" in agent_cache[agent_id]:
         return agent_cache[agent_id]["store_position"]
 
-    # Build a quick NL query for 'posicao'
     nl_query_pos = f"Na tabela 'posicao', retorne x,y,z onde numero = {store_number}."
     sql_pos, rows_pos = search_database(nl_query_pos)
     if not rows_pos:
@@ -347,18 +304,11 @@ def get_store_coordinates(store_number: int, agent_id: str):
     agent_cache[agent_id]["store_position"] = coords
     return coords
 
-
 def get_matching_items(buyer_request: str, store_number: int, agent_id: str):
-    """
-    1. Check if 'matching_items' is in cache.
-    2. If not, tries an exact match search in loja_{store_number}.
-    3. If none found, fallback search in a price range.
-    4. Caches the final result in 'matching_items' and returns.
-    """
     if "matching_items" in agent_cache[agent_id]:
         return agent_cache[agent_id]["matching_items"]
 
-    # Attempt exact match
+    # Tenta match exato
     prompt_for_loja = prompt_loja_chain.run({
         "store_number": store_number,
         "user_request": buyer_request
@@ -429,15 +379,7 @@ def get_matching_items(buyer_request: str, store_number: int, agent_id: str):
     agent_cache[agent_id]["matching_items"] = recommended_items
     return recommended_items
 
-
-#####################################################################
-# 6.2) Orchestrator Function (Optional)
-#####################################################################
 def multi_table_search(buyer_request: str, agent_id: str) -> str:
-    """
-    A high-level function that calls the above helpers.
-    Returns a textual summary (stock_info) of the results.
-    """
     lines = []
     try:
         store_number = get_store_number(buyer_request, agent_id)
@@ -473,8 +415,23 @@ def multi_table_search(buyer_request: str, agent_id: str) -> str:
 
 
 #####################################################################
-# 7) BuyerChain & SellerChain
+# 7) SetBuyerPreferences + Model + Memory
 #####################################################################
+
+@app.route('/setBuyerPreferences', methods=['POST'])
+def set_buyer_preferences():
+    data = request.get_json()
+
+    print("[setBuyerPreferences] Recebi JSON:", data)
+    
+    agent_id = data.get("agent_id", "default_agent")
+    desired_item = data.get("desired_item", "camiseta branca")
+    max_price = data.get("max_price", 60)
+
+    agent_cache[agent_id]["desired_item"] = desired_item
+    agent_cache[agent_id]["max_price"] = max_price
+
+    return jsonify({"response": f"Preferencias salvas: item={desired_item}, max={max_price}."})
 
 class AgentResponse(BaseModel):
     answer: str
@@ -482,63 +439,14 @@ class AgentResponse(BaseModel):
 
 parser = PydanticOutputParser(pydantic_object=AgentResponse)
 
-########################################
-# BuyerChain
-########################################
+# Memória para conversa do Buyer (para o LLM relembrar contexto)
 buyer_memory = ConversationBufferMemory(
     memory_key="history",
     return_messages=True
 )
 
-buyer_system_template = """
-Você é o Buyer (comprador) em uma loja no shopping.
-Não se identifique como IA.
-
-Objetivo:
-- Você quer comprar alguma coisa ou não.
-- Você pode fazer NO MÁXIMO 3 perguntas sobre preço, quantidade, material, tamanho ou estampa.
-- Depois de 3 perguntas, OBRIGATORIAMENTE deve decidir:
-  - Se for comprar: escreva EXATAMENTE "Vou levar"
-  - Se não for comprar: escreva EXATAMENTE "Não vou levar"
-- Você deve querer apenas aquilo que foi designado a você comprar e nada mais, não faça perguntas sobre outros produtos.
-- Se encontrar uma camiseta branca por até R$ 60,00, você tende a comprar.
-
-Histórico da conversa até agora:
-{history}
-
-Responda com um JSON contendo os campos:
-{format_instructions}
-"""
-
-
-buyer_human_template = """
-A última fala do Vendedor (Seller) foi:
-{seller_utterance}
-
-Agora responda como BUYER:
-1. Se ainda não atingiu 3 perguntas e não decidiu, faça sua pergunta ou observação.
-2. Se já fez 3 perguntas, OBRIGATORIAMENTE diga "Vou levar" ou "Não vou levar".
-3. Não se identifique como IA.
-"""
-
-buyer_system_msg = SystemMessagePromptTemplate.from_template(buyer_system_template)
-buyer_human_msg = HumanMessagePromptTemplate.from_template(buyer_human_template)
-
-buyer_prompt = ChatPromptTemplate(
-    input_variables=["history", "seller_utterance"],
-    partial_variables={"format_instructions": parser.get_format_instructions()},
-    messages=[buyer_system_msg, buyer_human_msg]
-)
-
-buyer_chain = LLMChain(
-    llm=openai_llm,
-    prompt=buyer_prompt,
-    memory=buyer_memory,
-    verbose=False
-)
-
 ########################################
-# SellerChain
+# SellerChain (mantemos como antes)
 ########################################
 seller_system_template = """
 Você é o Seller (vendedor) em uma loja no shopping.
@@ -587,13 +495,11 @@ seller_prompt = ChatPromptTemplate(
     messages=[seller_system_msg, seller_human_msg]
 )
 
-
 seller_chain = LLMChain(
     llm=openai_llm,
     prompt=seller_prompt,
     verbose=False
 )
-
 
 #####################################################################
 # 8) Flask Endpoints
@@ -656,7 +562,7 @@ def store_request():
     # 1) multi_table_search to get inventory details
     stock_info = multi_table_search(prompt, agent_id)
 
-    # 2) Get response from seller_chain (structured as JSON)
+    # 2) Chamar SellerChain
     seller_response_raw = seller_chain.run(
         buyer_utterance=prompt,
         stock_info=stock_info,
@@ -669,17 +575,79 @@ def store_request():
 
     return jsonify(seller_response.dict())
 
-
 @app.route('/request/client', methods=['POST'])
 def client_request():
     data = request.get_json()
     prompt = data.get("prompt", "")
     agent_id = data.get("agent_id", "default_agent")
 
-    # Prompt é a fala do Seller
-    buyer_response_raw = buyer_chain.run(seller_utterance=prompt)
-    buyer_response = parser.parse(buyer_response_raw)
+    # 1) Recuperar item e preço do agent_cache
+    desired_item = agent_cache[agent_id].get("desired_item", "camiseta branca")
+    max_price = agent_cache[agent_id].get("max_price", 60)
 
+    # 2) Montar prompt dinâmico do Buyer
+    dynamic_buyer_system_template = f"""
+    Você é o Buyer (comprador) em uma loja no shopping.
+    Não se identifique como IA.
+
+    Objetivo:
+    - Você quer comprar alguma coisa ou não.
+    - Você pode fazer NO MÁXIMO 3 perguntas sobre preço, quantidade, material, tamanho ou estampa.
+    - Depois de 3 perguntas, OBRIGATORIAMENTE deve decidir:
+        - Se for comprar: escreva EXATAMENTE "Vou levar"
+        - Se não for comprar: escreva EXATAMENTE "Não vou levar"
+    - Você deve querer apenas aquilo que foi designado a você comprar e nada mais, não faça perguntas sobre outros produtos.
+    - Se encontrar {desired_item} por até R$ {max_price:.2f}, você tende a comprar.
+
+    Histórico da conversa até agora:
+    {{history}}
+
+    Responda com um JSON contendo os campos:
+    {{format_instructions}}
+    """
+
+    print("=== [DEBUG] Buyer System Prompt Dinâmico ===")
+    print(dynamic_buyer_system_template)
+    print("============================================")
+
+    # 3) Construir system/human
+    buyer_system_msg = SystemMessagePromptTemplate.from_template(dynamic_buyer_system_template)
+
+    # Fazemos um template fixo para a fala do Seller:
+    buyer_human_template = """
+A última fala do Vendedor (Seller) foi:
+{seller_utterance}
+
+Agora responda como BUYER:
+1. Se ainda não atingiu 3 perguntas e não decidiu, faça sua pergunta ou observação.
+2. Se já fez 3 perguntas, OBRIGATORIAMENTE diga "Vou levar" ou "Não vou levar".
+3. Não se identifique como IA.
+"""
+    buyer_human_msg = HumanMessagePromptTemplate.from_template(buyer_human_template)
+
+    dynamic_buyer_prompt = ChatPromptTemplate(
+        input_variables=["history", "seller_utterance"],
+        partial_variables={"format_instructions": parser.get_format_instructions()},
+        messages=[buyer_system_msg, buyer_human_msg]
+    )
+
+    # 4) Criar chain temporária
+    temp_buyer_chain = LLMChain(
+        llm=openai_llm,
+        prompt=dynamic_buyer_prompt,
+        memory=buyer_memory,
+        verbose=False
+    )
+
+    # 5) Gerar resposta
+    buyer_response_raw = temp_buyer_chain.run(seller_utterance=prompt)
+
+    # (Opcional) Logar a resposta bruta
+    print("=== [DEBUG] Buyer LLM Raw Response ===")
+    print(buyer_response_raw)
+    print("======================================")
+
+    buyer_response = parser.parse(buyer_response_raw)
     return jsonify(buyer_response.dict())
 
 @app.route('/resumoOferta', methods=['POST'])
@@ -692,15 +660,14 @@ def resumo_oferta():
 
     history = buyer_memory.load_memory_variables({}).get("history", [])
 
-    # Debug: print the conversation so far
     print("=== Histórico da conversa ===")
     for msg in history:
         print(f"{msg.type.upper()}: {msg.content}")
 
-    # Create a short summarizing prompt
+    # Summarizing prompt
     resumo_prompt = ChatPromptTemplate.from_messages([
         SystemMessagePromptTemplate.from_template(
-            "Você é um assistente que resume uma conversa de compra em uma frase clara e amigável para o usuário final. Você DEVE retornar o valor do produto que o usuário deseja."
+            "Você é um assistente que resume uma conversa de compra em uma frase clara e amigável. Você DEVE retornar o valor do produto que o usuário deseja."
         ),
         HumanMessagePromptTemplate.from_template(
             "Resuma a seguinte conversa de compra:\n\n{conversa}"
@@ -716,10 +683,9 @@ def resumo_oferta():
     )
 
     resumo = chain.run(conversa=conversa_texto)
-
     return jsonify({"answer": resumo})
 
 
 if __name__ == '__main__':
-    # In production, use a proper WSGI server. For dev, debug=True is OK.
+    # In produção, use um servidor WSGI. Aqui, debug=True para teste.
     app.run(host='0.0.0.0', port=8000, debug=True)
