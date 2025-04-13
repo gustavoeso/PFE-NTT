@@ -2,74 +2,90 @@ from langchain_community.utilities import SQLDatabase
 from langchain_experimental.sql import SQLDatabaseChain
 from langchain.prompts import PromptTemplate
 from sqlalchemy import text
-from server.db.engine import sync_engine
+from server.db.engine import engine
 from server.config import OPENAI_API_KEY, OPENAI_MODEL_NAME
 from langchain_openai import ChatOpenAI
-from langchain_core.runnables import Runnable
 from server.utils.memory import agent_cache
 from server.llm.prompts import prompt_generator_prompt, prompt_loja_prompt, prompt_loja_fallback_chain
 
 # Setup
 
-database = SQLDatabase(sync_engine)
+database = SQLDatabase(engine)
 llm = ChatOpenAI(model_name=OPENAI_MODEL_NAME, openai_api_key=OPENAI_API_KEY, temperature=0.0)
 
+# Novo prompt limpo (sem explicações, sem markdown)
 CUSTOM_SQL_PROMPT = """
-You are an expert SQL developer. The database schema is as follows:
+Você é um gerador de SQL. Dado o seguinte esquema de banco de dados:
 
-TABLE `lojas`:
-  - id (integer)
-  - tipo (varchar)
-  - numero (numeric)
+TABLE lojas:
+  - id (INTEGER)
+  - tipo (TEXT)
+  - numero (INTEGER)
 
-TABLE `posicao`:
-  - numero (integer)
-  - x (integer)
-  - y (integer)
-  - z (integer)
+TABLE posicao:
+  - numero (INTEGER)
+  - x (INTEGER)
+  - y (INTEGER)
+  - z (INTEGER)
 
-TABLE `loja_100`:
-  - produto (varchar)
-  - tipo (varchar)
-  - qtd (int)
-  - preco (decimal)
-  - tamanho (varchar)
-  - material (varchar)
-  - estampa (varchar)
+TABLE loja_100:
+  - produto (TEXT)
+  - tipo (TEXT)
+  - qtd (INTEGER)
+  - preco (FLOAT)
+  - tamanho (TEXT)
+  - material (TEXT)
+  - estampa (TEXT)
 
-TABLE `loja_105`:
-  - produto (varchar)
-  - tipo (varchar)
-  - qtd (int)
-  - preco (decimal)
-  - console (varchar)
+TABLE loja_105:
+  - produto (TEXT)
+  - tipo (TEXT)
+  - qtd (INTEGER)
+  - preco (FLOAT)
+  - console (TEXT)
 
-User Question: {input}
-SQLQuery:
+Gere APENAS a query SQL. Sem explicações, comentários, ou markdown.
+Pergunta: {input}
+SQL:
 """
 
 sql_prompt = PromptTemplate(input_variables=["input"], template=CUSTOM_SQL_PROMPT)
-sql_chain = SQLDatabaseChain.from_llm(llm=llm, db=database, prompt=sql_prompt, verbose=True)
+sql_chain = SQLDatabaseChain.from_llm(llm=llm, db=database, prompt=sql_prompt, verbose=True, use_query_checker=True)
 
 def search_database(nl_query: str):
+    """
+    Use the sql_chain to turn natural language into SQL, then execute it.
+    Returns (sql_text, rows).
+
+    Also sanitizes the output to remove triple backticks or "SQLQuery:".
+    """
     try:
         chain_output = sql_chain.invoke({"query": nl_query})
     except Exception as e:
         print(f"[search_database] Error generating SQL: {e}")
         return ("", [])
 
+    print(f"[search_database] Chain output: {chain_output}")
+
     raw_result = chain_output.get("result", "")
     if not raw_result:
         return ("", [])
 
-    sql_text = raw_result.replace("SQLQuery:", "").replace("```", "").strip()
+    sanitized = raw_result.replace("```", "").replace("SQLQuery:", "").strip()
+    sql_text = sanitized
+
     print(f"[search_database] SQL Gerado:\n{sql_text}")
 
     rows = []
     try:
-        with sync_engine.connect() as conn:
+        with engine.connect() as conn:
             result_proxy = conn.execute(text(sql_text))
             rows = result_proxy.fetchall()
+
+            print(f"[search_database] Resultado da query:")
+            for i, row in enumerate(rows):
+                print(f"  Linha {i + 1}: {row}")
+
     except Exception as e:
         print(f"[search_database] Erro ao executar a query SQL: {e}")
 

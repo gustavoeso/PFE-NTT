@@ -15,7 +15,6 @@ public class Client : Agent
     private Rigidbody rb;
     public float speed = 2.0f;
     private string requestedItem = "Camiseta branca";
-    private float maxPriceWanted = 0.0f;
     private bool hasAskedGuide = false;
     private bool onWayToStore = false;
     private bool hasTalkedToStore = false;
@@ -24,6 +23,7 @@ public class Client : Agent
     private bool finalOffer = false;
     private Store targetStore = null;
     public bool startMovement = false;
+    private NativeWSClient websocketClient;
 
     protected override async void Start()
     {
@@ -31,13 +31,15 @@ public class Client : Agent
         rb = GetComponent<Rigidbody>();
         rb.isKinematic = true;
 
-        // (1) Inicializa sem mover
-        // Ativa /startApplication do servidor se quiser manter
-        await CallStartApplication();
+        websocketClient = FindFirstObjectByType<NativeWSClient>();
 
-        // Deixa o navMeshAgent "parado" aqui
-        // navMeshAgent.isStopped = true;
-        // ou simplesmente não seta destino ainda.
+        // Espera até o websocket estar conectado
+        while (!websocketClient.IsConnected)
+        {
+            await Task.Delay(100); // espera 100ms
+        }
+
+        await CallStartApplication();
     }
 
     void Update()
@@ -77,31 +79,8 @@ public class Client : Agent
 
     private async Task CallStartApplication()
     {
-        string url = "http://localhost:8000/startApplication";
-
-        // JSON with { "agent_id": this.myAgentId }
-        var bodyObj = new { agent_id = myAgentId };
-        string bodyJson = JsonUtility.ToJson(bodyObj);
-        byte[] bodyRaw  = System.Text.Encoding.UTF8.GetBytes(bodyJson);
-
-        using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
-        {
-            request.uploadHandler   = new UploadHandlerRaw(bodyRaw);
-            request.downloadHandler = new DownloadHandlerBuffer();
-            request.SetRequestHeader("Content-Type", "application/json");
-
-            var operation = request.SendWebRequest();
-            while (!operation.isDone) await Task.Yield();
-
-            if (request.result != UnityWebRequest.Result.Success)
-            {
-                Debug.LogError("Erro ao chamar /startApplication: " + request.error);
-            }
-            else
-            {
-                Debug.Log("API /startApplication chamada com sucesso: " + request.downloadHandler.text);
-            }
-        }
+        await websocketClient.SendStartMessage();
+        return;
     }
 
     public override async Task StartConversation(string dialoguePartner)
@@ -130,16 +109,20 @@ public class Client : Agent
             await Dialogue.Instance.StartDialogue(prompt, true);
             await TTSManager.Instance.SpeakAsync(prompt, TTSManager.Instance.voiceClient);
 
-            // (2) Buyer -> guide endpoint
-            string guideJson = await SendPrompt(prompt, "guide", "client");
-            string guideAnswer = ExtractResponse(guideJson);
+            // (1) Envia via WebSocket com ação "guide_request"
+            string guideJson = await websocketClient.EnviarMensagemParaGuia(prompt);
+            Debug.Log("[Client] JSON recebido do guia: " + guideJson);
+
+            // (2) Extrai a resposta
+            AgentResponse response = JsonUtility.FromJson<AgentResponse>(guideJson);
+            string guideAnswer = response.answer;
             Debug.Log("[Client] guideAnswer=" + guideAnswer);
 
             await Dialogue.Instance.StartDialogue(guideAnswer, false);
             await TTSManager.Instance.SpeakAsync(guideAnswer, TTSManager.Instance.voiceGuide);
             Dialogue.Instance.CloseDialogue();
 
-            // (3) Extract store number from "número=xxx"
+            // (3) Extração de número da loja e movimentação
             string storeNumber = ExtractStoreNumber(guideAnswer);
             Debug.Log("[Client] Número da loja extraído: " + storeNumber);
 
@@ -203,7 +186,7 @@ public class Client : Agent
             await TTSManager.Instance.SpeakAsync(buyerMessage, TTSManager.Instance.voiceClient);
 
             // Buyer -> store
-            string storeJson = await SendPrompt(buyerMessage, "store", "client");
+            string storeJson = await websocketClient.EnviarMensagemParaGuia(buyerMessage);
             string storeMessage = ExtractResponse(storeJson);
             finalOffer = ExtractFinalOffer(storeJson);
             Debug.Log($"[Store Wants to Stop] {finalOffer}");
@@ -331,12 +314,8 @@ public class Client : Agent
         }
     }
 
-    public void SetDesiredPurchase(string desiredItem, float maxPrice){
-        // Guardar em variáveis
-        this.requestedItem = desiredItem;
-        this.maxPriceWanted = maxPrice;
-
-        StartCoroutine(SendBuyerPreferencesToServer(requestedItem, maxPriceWanted));
+    public async Task SetDesiredPurchase(string desiredItem, float maxPrice){
+        await websocketClient.SetBuyerPreferences(desiredItem, maxPrice.ToString());
     }
 
     public void BeginMovement(){
@@ -363,40 +342,13 @@ public class Client : Agent
         public string desired_item;
         public float max_price;
     }
-    public IEnumerator SendBuyerPreferencesToServer(string item, float price) {
-        string url = "http://localhost:8000/setBuyerPreferences";
 
-        // 1) Instancie a classe
-        PreferencesData bodyObj = new PreferencesData() {
-            agent_id = myAgentId,       // <--- certifique-se que 'myAgentId' não está vazio
-            desired_item = item,
-            max_price = price
-        };
-
-        // 2) Use JsonUtility normalmente
-        string json = JsonUtility.ToJson(bodyObj);
-
-        // Debug para ver o que vai pro servidor
-        Debug.Log("[SendBuyerPreferencesToServer] JSON: " + json);
-
-        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
-
-        using (UnityWebRequest www = new UnityWebRequest(url, "POST"))
-        {
-            www.uploadHandler = new UploadHandlerRaw(bodyRaw);
-            www.downloadHandler = new DownloadHandlerBuffer();
-            www.SetRequestHeader("Content-Type", "application/json");
-
-            yield return www.SendWebRequest();
-
-            if (www.result != UnityWebRequest.Result.Success)
-            {
-                Debug.LogError("Erro ao enviar preferências: " + www.error);
-            }
-            else
-            {
-                Debug.Log("Preferências do Buyer enviadas com sucesso!");
-            }
-        }
+    [System.Serializable]
+    public class AgentResponse
+    {
+        public string request_id;
+        public string answer;
+        public bool final_offer;
     }
+
 }

@@ -19,6 +19,8 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
             prompt = data_json.get("prompt")
 
             if action == "start":
+                agent_cache[agent_id].clear()
+                agent_memory[agent_id].clear()  # já presente
                 await websocket.send_text(json.dumps({"message": f"Sessão iniciada para agent_id={agent_id}"}))
 
             elif action == "buyer_message":
@@ -38,7 +40,6 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
             elif action == "store_request":
                 store_number = get_store_number(prompt, agent_id)
                 stock_info = multi_table_search(prompt, agent_id)
-                matching_items = get_matching_items(prompt, store_number, agent_id)
 
                 history_text = "\n".join(f"{m['role'].upper()}: {m['text']}" for m in agent_memory[agent_id])
 
@@ -61,21 +62,54 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
                 await websocket.send_text(json.dumps({"resumo": resumo}))
 
             elif action == "guide_request":
+                request_id = data_json.get("request_id", "undefined")
+
                 try:
                     store_number = get_store_number(prompt, agent_id)
                     store_id = agent_cache[agent_id].get("store_id")
                     store_tipo = agent_cache[agent_id].get("store_tipo")
                     coords = get_store_coordinates(store_number, agent_id)
+
                     if coords:
                         x, y, z = coords
-                        answer = f"Loja encontrada: id={store_id}, tipo='{store_tipo}', número={store_number}. Localização: x={x}, y={y}, z={z}."
+                        answer = (
+                            f"Loja encontrada: id={store_id}, tipo='{store_tipo}', número={store_number}. "
+                            f"Localização: x={x}, y={y}, z={z}."
+                        )
                     else:
-                        answer = f"Loja encontrada: id={store_id}, tipo='{store_tipo}', número={store_number}, mas posição não cadastrada."
+                        answer = (
+                            f"Loja encontrada: id={store_id}, tipo='{store_tipo}', número={store_number}, "
+                            "mas posição não cadastrada."
+                        )
 
-                    await websocket.send_text(json.dumps({"answer": answer, "final_offer": False}))
+                    print(f"[INFO] Enviando resposta para o cliente: {answer}")
+
+                    agent_memory[agent_id].append({"role": "guide", "text": answer})
+                    await websocket.send_text(json.dumps({
+                        "request_id": request_id,
+                        "answer": answer,
+                        "final_offer": False
+                    }))
 
                 except ValueError as e:
-                    await websocket.send_text(json.dumps({"answer": str(e), "final_offer": True}))
+                    await websocket.send_text(json.dumps({
+                        "request_id": request_id,
+                        "answer": str(e),
+                        "final_offer": True
+                    }))
+
+            elif action == "setBuyerPreferences":
+                try:
+                    desired_item = data_json.get("desired_item", "camiseta branca")
+                    max_price = data_json.get("max_price", 60)
+
+                    agent_cache[agent_id]["desired_item"] = desired_item
+                    agent_cache[agent_id]["max_price"] = max_price
+
+                    await websocket.send_text(json.dumps({"response": f"Preferencias salvas: item={desired_item}, max={max_price}."}))
+                
+                except ValueError as e:
+                    await websocket.send_text(json.dumps({"response": str(e)}))
 
     except WebSocketDisconnect:
         print(f"[INFO] Desconectado: {agent_id}")

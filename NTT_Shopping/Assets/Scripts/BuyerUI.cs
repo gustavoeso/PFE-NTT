@@ -1,7 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Globalization;
-using TMPro; // Se estiver usando TextMesh Pro
+using TMPro;
+using System.Threading.Tasks; // Se estiver usando TextMesh Pro
 
 public class BuyerUI : MonoBehaviour
 {
@@ -11,7 +12,12 @@ public class BuyerUI : MonoBehaviour
     public Client client;
     public GameObject inputPanel; 
 
-    public void OnConfirmButtonClicked()
+    public void OnClickWrapper()
+    {
+        _ = OnConfirmButtonClicked(); // Ignora o Task, como o Unity espera void
+    }
+
+    public async Task OnConfirmButtonClicked()
     {
         
         // 1) Ler o texto dos campos
@@ -24,7 +30,8 @@ public class BuyerUI : MonoBehaviour
         }
 
         // 2) Passar para o Client (ou fazer o que precisar)
-        client.SetDesiredPurchase(item, precoMaximo);
+        Debug.Log("(ClienteUI) Enviando dados para o Client...");
+        await client.SetDesiredPurchase(item, precoMaximo);
 
         // 3) Sinalizar ao Client para iniciar a movimentação
         client.BeginMovement();
