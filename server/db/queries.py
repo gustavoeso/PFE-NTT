@@ -6,7 +6,8 @@ from server.db.engine import engine
 from server.config import OPENAI_API_KEY, OPENAI_MODEL_NAME
 from langchain_openai import ChatOpenAI
 from server.utils.memory import agent_cache
-from server.llm.prompts import prompt_generator_prompt, prompt_loja_prompt, prompt_loja_fallback_chain
+from server.llm.prompts import prompt_loja_prompt, prompt_loja_fallback_chain
+from langchain.chains import LLMChain
 
 # Setup
 
@@ -15,42 +16,67 @@ llm = ChatOpenAI(model_name=OPENAI_MODEL_NAME, openai_api_key=OPENAI_API_KEY, te
 
 # Novo prompt limpo (sem explicações, sem markdown)
 CUSTOM_SQL_PROMPT = """
-Você é um gerador de SQL. Dado o seguinte esquema de banco de dados:
+You are an expert SQL developer. The database schema is as follows:
 
-TABLE lojas:
-  - id (INTEGER)
-  - tipo (TEXT)
-  - numero (INTEGER)
+TABLE `lojas`:
+  - id (integer)
+  - tipo (varchar)
+  - numero (numeric)
 
-TABLE posicao:
-  - numero (INTEGER)
-  - x (INTEGER)
-  - y (INTEGER)
-  - z (INTEGER)
+TABLE `posicao`:
+  - numero (integer)
+  - x (integer)
+  - y (integer)
+  - z (integer)
 
-TABLE loja_100:
-  - produto (TEXT)
-  - tipo (TEXT)
-  - qtd (INTEGER)
-  - preco (FLOAT)
-  - tamanho (TEXT)
-  - material (TEXT)
-  - estampa (TEXT)
 
-TABLE loja_105:
-  - produto (TEXT)
-  - tipo (TEXT)
-  - qtd (INTEGER)
-  - preco (FLOAT)
-  - console (TEXT)
+TABLE `loja_100`:
+    id SERIAL PRIMARY KEY,
+    produto VARCHAR(50),
+    tipo VARCHAR(50),
+    qtd INT,
+    preco DECIMAL(10,2),
+    tamanho VARCHAR(10),
+    material VARCHAR(50),
+    estampa VARCHAR(3) CHECK (estampa IN ('Sim', 'Não'))
 
-Gere APENAS a query SQL. Sem explicações, comentários, ou markdown.
-Pergunta: {input}
-SQL:
+TABLE `loja_105`:
+    id SERIAL PRIMARY KEY,
+    produto VARCHAR(100), --> name of the game
+    tipo VARCHAR(50),     --> category of the game
+    qtd INT,              --> quantity in stock
+    preco DECIMAL(10,2),  --> price
+    console VARCHAR(50)   --> console name
+
+No other `loja_{{n}}` tables exist.
+
+IMPORTANT:
+ - Do NOT reference columns that do not exist.
+ - The table 'lojas' only has columns: id, tipo, numero
+ - If the user mentions color, do not filter by color in 'lojas' – that belongs in `loja_{{numero}}`.
+ - Only use existing columns.
+
+Given the user question, output a valid SQL query ONLY in the format:
+
+SQLQuery: SELECT ...
+
+No triple backticks or extra text. No explanations. Just the query.
+
+User Question: {input}
+SQLQuery:
 """
 
-sql_prompt = PromptTemplate(input_variables=["input"], template=CUSTOM_SQL_PROMPT)
-sql_chain = SQLDatabaseChain.from_llm(llm=llm, db=database, prompt=sql_prompt, verbose=True, use_query_checker=True)
+sql_prompt = PromptTemplate(
+    input_variables=["input"],
+    template=CUSTOM_SQL_PROMPT,
+)
+
+sql_chain = SQLDatabaseChain.from_llm(
+    llm=llm,
+    db=database,
+    prompt=sql_prompt,
+    verbose=True  # shows prompt, SQL, and results in terminal
+)
 
 def search_database(nl_query: str):
     """
@@ -91,32 +117,68 @@ def search_database(nl_query: str):
 
     return (sql_text, rows)
 
+prompt_generator_prompt = PromptTemplate(
+    input_variables=["user_request"],
+    template="""
+Você é um especialista em mapear pedidos do comprador para uma consulta na tabela 'lojas'.
+
+A tabela 'lojas' tem colunas: id, tipo, numero.
+ - 'tipo' pode ser 'Roupas', 'Jogos', 'Skate', etc.
+
+O comprador quer: "{user_request}".
+
+Gere, em português, um comando de consulta (NÃO em SQL, mas um texto em linguagem natural)
+que será usado pelo pesquisador para encontrar a loja certa na tabela 'lojas'.
+
+Por exemplo, se o comprador quer uma camiseta verde, o comando pode ser:
+"Na tabela 'lojas', retorne id, tipo, numero WHERE tipo = 'Roupas'"
+
+Explique brevemente qual 'tipo' corresponde ao que o comprador quer. 
+Retorne APENAS o texto que o pesquisador usará, sem explicações adicionais.
+"""
+)
+
+prompt_generator_chain = LLMChain(
+    llm=llm,
+    prompt=prompt_generator_prompt,
+    verbose=False
+)
+
 def get_store_number(buyer_request: str, agent_id: str) -> int:
+    """
+    1. Check if 'store_number' is cached for this agent_id.
+    2. If not cached, run prompt_generator_chain + search_database to find the store.
+    3. Cache the store_number, store_id, store_tipo.
+    4. Return the store_number.
+    """
+    # If we already have a store_number, return it
     if "store_number" in agent_cache[agent_id]:
         return agent_cache[agent_id]["store_number"]
-
-    prompt_for_lojas = prompt_generator_prompt | llm
-    loja_query = prompt_for_lojas.invoke({"user_request": buyer_request})
-    sql_store, rows_store = search_database(loja_query)
+    
+    # Otherwise, generate a query for 'lojas' using the LLM
+    prompt_for_lojas = prompt_generator_chain.run({"user_request": buyer_request})
+    sql_store, rows_store = search_database(prompt_for_lojas)
 
     if not rows_store:
-        raise ValueError(f"Nenhuma loja encontrada para: '{buyer_request}'")
+        raise ValueError(f"Nenhuma loja encontrada para: '{buyer_request}'.")
 
+    store_row = None
     for r in rows_store:
+        # row is (id, tipo, numero)
         try:
-            store_id, store_tipo, store_num = r
-            store_num = int(store_num)
+            temp_num = int(r[2])
+            store_row = r
             break
-        except:
+        except ValueError:
             continue
-    else:
-        raise ValueError("Nenhum número de loja válido encontrado.")
 
-    agent_cache[agent_id].update({
-        "store_number": store_num,
-        "store_id": store_id,
-        "store_tipo": store_tipo
-    })
+    if not store_row:
+        raise ValueError("Nenhum 'numero' válido encontrado na tabela 'lojas'.")
+
+    store_id, store_tipo, store_num = store_row
+    agent_cache[agent_id]["store_number"] = store_num
+    agent_cache[agent_id]["store_id"] = store_id
+    agent_cache[agent_id]["store_tipo"] = store_tipo
 
     return store_num
 

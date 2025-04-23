@@ -207,6 +207,7 @@ Explique brevemente qual 'tipo' corresponde ao que o comprador quer.
 Retorne APENAS o texto que o pesquisador usará, sem explicações adicionais.
 """
 )
+
 prompt_generator_chain = LLMChain(
     llm=llm_for_sql,
     prompt=prompt_generator_prompt,

@@ -78,8 +78,7 @@ public class NativeWSClient : MonoBehaviour
 
         await websocket.SendText(json);
 
-        // DEBUG: timeout de 5 segundos
-        var timeout = Task.Delay(20000);
+        var timeout = Task.Delay(40000);
         var completed = await Task.WhenAny(tcs.Task, timeout);
         if (completed == timeout)
         {

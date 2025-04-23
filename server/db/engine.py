@@ -3,4 +3,4 @@ from sqlalchemy import create_engine
 
 from server.config import DB_URI
 
-engine = create_engine(DB_URI.replace("+asyncpg", ""))  # usado por SQLDatabase
+engine = create_engine(DB_URI)

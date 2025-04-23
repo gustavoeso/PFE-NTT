@@ -80,23 +80,6 @@ resumo_prompt = ChatPromptTemplate.from_messages([
     )
 ])
 
-prompt_generator_prompt = PromptTemplate(
-    input_variables=["user_request"],
-    template="""
-Você é um especialista em mapear pedidos do comprador para uma consulta na tabela 'lojas'.
-
-A tabela 'lojas' tem colunas: id, tipo, numero.
- - 'tipo' pode ser 'Roupas', 'Jogos', 'Skate', etc.
-
-O comprador quer: "{user_request}".
-
-Gere, em português, um comando de consulta (NÃO em SQL, mas um texto em linguagem natural)
-que será usado pelo pesquisador para encontrar a loja certa na tabela 'lojas'.
-
-Por exemplo: "Na tabela 'lojas', retorne id, tipo, numero WHERE tipo = 'Roupas'"
-"""
-)
-
 # Prompt Loja
 prompt_loja_prompt = PromptTemplate(
     input_variables=["store_number", "user_request"],
