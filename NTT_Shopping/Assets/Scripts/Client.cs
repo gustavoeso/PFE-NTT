@@ -14,7 +14,7 @@ public class Client : Agent
 
     private Rigidbody rb;
     public float speed = 2.0f;
-    private string requestedItem = "Camiseta branca";
+    public string requestedItem = "";
     private bool hasAskedGuide = false;
     private bool onWayToStore = false;
     private bool hasTalkedToStore = false;
@@ -110,7 +110,7 @@ public class Client : Agent
             await TTSManager.Instance.SpeakAsync(prompt, TTSManager.Instance.voiceClient);
 
             // (1) Envia via WebSocket com ação "guide_request"
-            string guideJson = await websocketClient.EnviarMensagemParaGuia(prompt);
+            string guideJson = await websocketClient.SendMessageToGuide(prompt);
             Debug.Log("[Client] JSON recebido do guia: " + guideJson);
 
             // (2) Extrai a resposta
@@ -186,25 +186,24 @@ public class Client : Agent
             await TTSManager.Instance.SpeakAsync(buyerMessage, TTSManager.Instance.voiceClient);
 
             // Buyer -> store
-            string storeJson = await websocketClient.EnviarMensagemParaGuia(buyerMessage);
+            string storeJson = await websocketClient.SendMessageToStore(buyerMessage);
             string storeMessage = ExtractResponse(storeJson);
-            finalOffer = ExtractFinalOffer(storeJson);
-            Debug.Log($"[Store Wants to Stop] {finalOffer}");
             Debug.Log($"[Store -> Buyer] {storeMessage}");
 
             await Dialogue.Instance.StartDialogue(storeMessage, false);
             await TTSManager.Instance.SpeakAsync(storeMessage, TTSManager.Instance.voiceGuide);
 
             // Then store -> buyer
-            string buyerJson = await SendPrompt(storeMessage, "client", "seller");
+            string buyerJson = await websocketClient.SendMessageToBuyer(storeMessage);
             buyerMessage = ExtractResponse(buyerJson);
-            Debug.Log($"[Buyer -> Store] {buyerMessage}");
+            finalOffer = ExtractFinalOffer(buyerJson);
 
             if (finalOffer)
             {
                 Debug.Log($"[Buyer] Decisão detectada: {buyerMessage}");
 
-                string resumo = $"Resumo da oferta para '{requestedItem}': Produto com bom custo-benefício, entrega rápida e desconto de 10%.";
+                string resumoJson = await websocketClient.RequestSummary(storeMessage);
+                string resumo = ExtractResponse(resumoJson);
 
                 bool confirmada = await PurchaseDecisionUI.Instance.GetUserDecisionAsync(resumo);
 
@@ -287,31 +286,6 @@ public class Client : Agent
     {
         navMeshAgent.isStopped = true;
         navMeshAgent.velocity = Vector3.zero;
-    }
-
-    private async Task<string> GetResumoDaOfertaAsync()
-    {
-        string url = "http://localhost:8000/resumoOferta";
-
-        using (UnityWebRequest request = UnityWebRequest.PostWwwForm(url, "POST"))
-        {
-            request.downloadHandler = new DownloadHandlerBuffer();
-            request.uploadHandler   = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes("{}"));
-            request.SetRequestHeader("Content-Type", "application/json");
-
-            var op = request.SendWebRequest();
-            while (!op.isDone) await Task.Yield();
-
-            if (request.result != UnityWebRequest.Result.Success)
-            {
-                Debug.LogError("Erro ao buscar resumo da oferta: " + request.error);
-                return "Não foi possível gerar o resumo da oferta.";
-            }
-
-            string responseText = request.downloadHandler.text;
-            AgentResponse response = JsonUtility.FromJson<AgentResponse>(responseText);
-            return response.answer;
-        }
     }
 
     public async Task SetDesiredPurchase(string desiredItem, float maxPrice){

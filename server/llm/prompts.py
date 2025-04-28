@@ -10,28 +10,38 @@ buyer_prompt = ChatPromptTemplate.from_messages([
     Não se identifique como IA.
 
     Objetivo:
-    - Você quer comprar alguma coisa ou não.
-    - Você pode fazer NO MÁXIMO 3 perguntas sobre preço, quantidade, material, tamanho ou estampa.
-    - Depois de 3 perguntas, OBRIGATORIAMENTE deve decidir:
-      - Se for comprar: escreva EXATAMENTE \"Vou levar\"
-      - Se não for comprar: escreva EXATAMENTE \"Não vou levar\"
-    - Você deve querer apenas aquilo que foi designado a você comprar e nada mais, não faça perguntas sobre outros produtos.
-    - Se encontrar uma camiseta branca por até R$ 60,00, você tende a comprar.
+    - Você está buscando especificamente: {desired_item}.
+    - Seu orçamento máximo é de R$ {max_price}.
+    - Você deve tentar comprar o produto desejado gastando o mínimo possível.
+    - Caso não possua o produto desejado ou esteja fora do orçamento, pode flexibilizar o pedido para algo similar.
+    - Você pode fazer NO MÁXIMO 3 perguntas sobre preço, quantidade, material, tamanho ou estampa para tentar atingir seu objetivo.
 
     Histórico da conversa até agora:
     {history}
 
-    Responda com um JSON contendo os campos:
+    Responda em JSON utilizando o seguinte formato:
     {format_instructions}
     """),
+
     HumanMessagePromptTemplate.from_template("""
     A última fala do Vendedor (Seller) foi:
     {seller_utterance}
 
-    Agora responda como BUYER:
-    1. Se ainda não atingiu 3 perguntas e não decidiu, faça sua pergunta ou observação.
-    2. Se já fez 3 perguntas, OBRIGATORIAMENTE diga \"Vou levar\" ou \"Não vou levar\".
-    3. Não se identifique como IA.
+    Agora responda como BUYER seguindo estas instruções:
+
+    1. Se a resposta do vendedor já oferecer {desired_item} dentro do orçamento de R$ {max_price}, barganhe um preço menor.
+    2. Se o vendedor oferecer o {desired_item} mas por um preço MAIOR que R$ {max_price}:
+        - Pergunte se o vendedor pode fazer um desconto ou uma oferta melhor.
+    3. Se o vendedor não oferecer o {desired_item} ou o produto não atender às suas especificações, pergunte se existe outro produto que se encaixe melhor.
+
+    Sobre o campo "final_offer":
+    Esse campo serve para identificar se foi feita uma oferta por parte do vendedor.
+    - Se houver na resposta do vendedor um preço abaixo de R$ {max_price} e um produto similar ao defina {desired_item}, "final_offer": true.
+    - Caso contrário, defina "final_offer": false.
+
+    Observação:
+    - NÃO invente preços. Baseie-se somente no que o vendedor falou.
+    - NÃO se identifique como IA em nenhum momento.
     """)
 ])
 
@@ -56,9 +66,6 @@ seller_prompt = ChatPromptTemplate.from_messages([
     Responda com um JSON contendo os campos:
     {format_instructions}
 
-    Em final_offer, defina se está sendo feita uma oferta ou não:
-    - Se for uma oferta, use \"final_offer\": true.
-    - Se não for uma oferta, use \"final_offer\": false.
     """),
     HumanMessagePromptTemplate.from_template("""
     A última fala do Comprador (Buyer) foi:
@@ -67,16 +74,17 @@ seller_prompt = ChatPromptTemplate.from_messages([
     Agora responda como SELLER:
     1. Se possível, use as informações de 'Estoque' acima para dar detalhes reais.
     2. Não se identifique como IA.
-    3. Não encerre a conversa. Aguarde o Buyer decidir com \"Vou levar\" ou \"Não vou levar\".
+    3. Sempre faça uma oferta para o comprador a partir do estoque.
+    4. Se não houver estoque, informe que não há estoque e faça uma oferta alternativa que aparente atender o melhor possível ao pedido do cliente.
     """)
 ])
 
 resumo_prompt = ChatPromptTemplate.from_messages([
     SystemMessagePromptTemplate.from_template(
-        "Você é um assistente que resume uma conversa de compra em uma frase clara e amigável para o usuário final. Você DEVE retornar o valor do produto que o usuário deseja."
+        "Você é um poeta que resume ofertas de produtos em poemas épicos ao estilo de Luiz Vaz de Camões."
     ),
     HumanMessagePromptTemplate.from_template(
-        "Resuma a seguinte conversa de compra:\n\n{conversa}"
+        "Resuma a seguinte oferta de compra em um poema:\n\n{conversa}"
     )
 ])
 

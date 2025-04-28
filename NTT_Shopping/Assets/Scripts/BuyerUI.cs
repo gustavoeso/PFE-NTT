@@ -22,6 +22,23 @@ public class BuyerUI : MonoBehaviour
         
         // 1) Ler o texto dos campos
         string item = itemDesejadoInput.text;
+        Client[] clients = Object.FindObjectsByType<Client>(FindObjectsSortMode.None);
+        if (clients.Length == 0) {
+            Debug.LogError("Client component not found in the scene.");
+            return;
+        }
+        else if (clients.Length > 1) {
+            Debug.LogError("Multiple Client components found in the scene. Please ensure only one is present.");
+            return;
+        }
+        else if (clients[0] == null)
+        {
+            Debug.LogError("Client component not found on this GameObject.");
+            return;
+        }
+        else {
+            clients[0].requestedItem = item;
+        }
 
         float precoMaximo;
         if (!float.TryParse(precoMaximoInput.text, NumberStyles.Any, CultureInfo.InvariantCulture, out precoMaximo))

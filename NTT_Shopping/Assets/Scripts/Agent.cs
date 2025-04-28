@@ -34,54 +34,6 @@ public class Agent : MonoBehaviour
         return Task.CompletedTask;
     }
 
-    // Envia um prompt para um agente específico na API
-    protected async Task<string> SendPrompt(string prompt, string endpointName, string speaker)
-    {
-        isRequestInProgress = true;
-
-        // Remove extra quotes for safety
-        prompt = prompt.Replace("\"", "");
-
-        // (2) Include agent_id in the request body
-        PromptData data = new PromptData
-        {
-            prompt   = prompt,
-            speaker  = speaker,
-            agent_id = myAgentId // Use our newly generated ID
-        };
-
-        string jsonData = JsonUtility.ToJson(data);
-        byte[] bodyRaw  = Encoding.UTF8.GetBytes(jsonData);
-
-        // We'll build a URL using endpointName: "guide", "store", or "client"
-        string url = "http://localhost:8000/request/" + endpointName;
-
-        using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
-        {
-            request.uploadHandler   = new UploadHandlerRaw(bodyRaw);
-            request.downloadHandler = new DownloadHandlerBuffer();
-            request.SetRequestHeader("Content-Type", "application/json");
-
-            var operation = request.SendWebRequest();
-            while (!operation.isDone)
-            {
-                await Task.Yield();
-            }
-
-            isRequestInProgress = false;
-
-            if (request.result == UnityWebRequest.Result.Success)
-            {
-                return request.downloadHandler.text;
-            }
-            else
-            {
-                Debug.LogError("Erro: " + request.error);
-                return null;
-            }
-        }
-    }
-
         // Extrai a resposta do JSON retornado pela API
     protected string ExtractResponse(string jsonResponse)
     {

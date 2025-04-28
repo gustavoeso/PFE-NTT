@@ -67,7 +67,7 @@ public class NativeWSClient : MonoBehaviour
         await websocket.Close();
     }
 
-    private async Task<string> EnviarComResposta(string action, string conteudoJson = "")
+    private async Task<string> SendTextWithAnswer(string action, string conteudoJson = "")
     {
         string requestId = Guid.NewGuid().ToString();
         string json = $"{{\"action\": \"{action}\", \"request_id\": \"{requestId}\"{(conteudoJson != "" ? ", " + conteudoJson : "")}}}";
@@ -75,7 +75,7 @@ public class NativeWSClient : MonoBehaviour
 
         var tcs = new TaskCompletionSource<string>();
         pendingResponses[requestId] = tcs;
-
+        
         await websocket.SendText(json);
 
         var timeout = Task.Delay(40000);
@@ -100,27 +100,34 @@ public class NativeWSClient : MonoBehaviour
 
     public async Task SetBuyerPreferences(string desired_item, string price)
     {
-        string json = $"{{\"action\": \"setBuyerPreferences\", \"desired_item\": \"{desired_item}\", \"price\": \"{price}\"}}";
+        string json = $"{{\"action\": \"setBuyerPreferences\", \"desired_item\": \"{desired_item}\", \"max_price\": \"{price}\"}}";
         Debug.Log("Enviando preferências: " + json);
         await websocket.SendText(json);
     }
 
     // ✅ Com resposta
-    public async Task<string> EnviarMensagemParaLoja(string prompt)
+    public async Task<string> SendMessageToStore(string prompt)
     {
         string json = $"\"prompt\": \"{prompt}\"";
-        return await EnviarComResposta("buyer_message", json);
+        return await SendTextWithAnswer("store_request", json);
     }
 
-    public async Task<string> EnviarMensagemParaGuia(string prompt)
+    public async Task<string> SendMessageToBuyer(string prompt)
     {
         string json = $"\"prompt\": \"{prompt}\"";
-        return await EnviarComResposta("guide_request", json);
+        return await SendTextWithAnswer("buyer_message", json);
     }
 
-    public async Task<string> SolicitarResumo()
+    public async Task<string> SendMessageToGuide(string prompt)
     {
-        return await EnviarComResposta("get_summary");
+        string json = $"\"prompt\": \"{prompt}\"";
+        return await SendTextWithAnswer("guide_request", json);
+    }
+
+    public async Task<string> RequestSummary(string prompt)
+    {
+        string json = $"\"conversa\": \"{prompt}\"";
+        return await SendTextWithAnswer("get_summary", json);
     }
 
     [Serializable]
