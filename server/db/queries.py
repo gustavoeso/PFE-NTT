@@ -263,23 +263,41 @@ def get_matching_items(buyer_request: str, store_number: int, agent_id: str):
         "WcDonalds": ["produto", "tipo", "qtd", "preco"]
     }
     columns = schema.get(store_tipo, ["produto", "tipo", "qtd", "preco"])
+    col_string = ", ".join(columns)
 
-    # Query principal
+    # 🔎 1. Buscar tudo que está no estoque da loja
+    full_query = f"SELECT {col_string} FROM loja_{store_number} WHERE qtd > 0"
+    _, all_rows = search_database(full_query)
+    all_items = [{col: row[i] for i, col in enumerate(columns)} for row in all_rows]
+    agent_cache[agent_id]["all_items_in_stock"] = all_items
+
+    # 🔍 2. Tentar busca com filtro usando o pedido original
     loja_prompt = generate_sql_for_loja(buyer_request, store_number, store_tipo)
     _, rows = search_database(loja_prompt)
 
     matches = []
     for r in rows:
-        item = {}
-        for i, col in enumerate(columns):
-            item[col] = r[i]
+        item = {col: r[i] for i, col in enumerate(columns)}
         matches.append(item)
 
     if matches:
         agent_cache[agent_id]["matching_items"] = matches
         return matches
 
-    # Fallback com preço estimado
+    # 💡 3. Fallback inteligente por similaridade textual com o estoque
+    buyer_request_lower = buyer_request.lower()
+    fallback_matches = []
+    for item in all_items:
+        for campo in ["produto", "tipo", "marca"]:
+            if campo in item and buyer_request_lower in str(item[campo]).lower():
+                fallback_matches.append(item)
+                break
+
+    if fallback_matches:
+        agent_cache[agent_id]["matching_items"] = fallback_matches
+        return fallback_matches
+
+    # 🪙 4. Fallback final com base no preço
     reference_price = 250.0
     preco_query = f"SELECT preco FROM loja_{store_number} WHERE produto ILIKE '%{buyer_request}%' LIMIT 1"
     _, fallback_rows = search_database(preco_query)
@@ -292,7 +310,6 @@ def get_matching_items(buyer_request: str, store_number: int, agent_id: str):
     min_price = reference_price * 0.8
     max_price = reference_price * 1.2
 
-    col_string = ", ".join(columns)
     fallback_query = f"""
         SELECT {col_string}
         FROM loja_{store_number}
@@ -301,16 +318,13 @@ def get_matching_items(buyer_request: str, store_number: int, agent_id: str):
     """.strip()
 
     _, rows = search_database(fallback_query)
-
-    fallback_matches = []
     for r in rows:
-        item = {}
-        for i, col in enumerate(columns):
-            item[col] = r[i]
+        item = {col: r[i] for i, col in enumerate(columns)}
         fallback_matches.append(item)
 
     agent_cache[agent_id]["matching_items"] = fallback_matches
     return fallback_matches
+
 
 def multi_table_search(buyer_request: str, agent_id: str) -> str:
     lines = []
