@@ -19,36 +19,58 @@ CUSTOM_SQL_PROMPT = """
 You are an expert SQL developer. The database schema is as follows:
 
 TABLE `lojas`:
-  - id (integer)
-  - tipo (varchar)
-  - numero (numeric)
+  - id (integer)                    -- Unique store ID
+  - tipo (varchar)                 -- Type of store (e.g., Roupas, Jogos, Tênis)
+  - numero (numeric)              -- Store number, used to link to loja_{{numero}} tables
 
 TABLE `posicao`:
-  - numero (integer)
-  - x (integer)
-  - y (integer)
-  - z (integer)
+  - numero (integer)              -- Store number (foreign key to 'lojas')
+  - x (integer)                   -- X coordinate on the map
+  - y (integer)                   -- Y coordinate on the map
+  - z (integer)                   -- Z coordinate on the map
 
+TABLE `loja_100`:                 -- Clothing store
+  - id SERIAL PRIMARY KEY
+  - produto VARCHAR(50)           -- Product name (e.g., Camiseta)
+  - tipo VARCHAR(50)              -- Variation (e.g., Preta, Branca)
+  - qtd INT                       -- Quantity in stock
+  - preco DECIMAL(10,2)           -- Price
+  - tamanho VARCHAR(10)           -- Size (e.g., P, M, G, 42)
+  - material VARCHAR(50)          -- Material (e.g., Algodão)
+  - estampa VARCHAR(3)            -- "Sim" or "Não" for printed design
 
-TABLE `loja_100`:
-    id SERIAL PRIMARY KEY,
-    produto VARCHAR(50),
-    tipo VARCHAR(50),
-    qtd INT,
-    preco DECIMAL(10,2),
-    tamanho VARCHAR(10),
-    material VARCHAR(50),
-    estampa VARCHAR(3) CHECK (estampa IN ('Sim', 'Não'))
+TABLE `loja_200`:                 -- Video games store
+  - id SERIAL PRIMARY KEY
+  - produto VARCHAR(100)          -- Game title (e.g., FIFA 23)
+  - tipo VARCHAR(50)              -- Genre (e.g., FPS, RPG)
+  - qtd INT                       -- Quantity in stock
+  - preco DECIMAL(10,2)           -- Price
+  - console VARCHAR(50)           -- Console name (e.g., Xbox)
 
-TABLE `loja_105`:
-    id SERIAL PRIMARY KEY,
-    produto VARCHAR(100), --> name of the game
-    tipo VARCHAR(50),     --> category of the game
-    qtd INT,              --> quantity in stock
-    preco DECIMAL(10,2),  --> price
-    console VARCHAR(50)   --> console name
+TABLE `loja_300`:                 -- Skate shop
+  - id SERIAL PRIMARY KEY
+  - produto VARCHAR(50)           -- Product name (e.g., Skate, Capacete)
+  - marca VARCHAR(50)             -- Brand (e.g., Vans, Thrasher)
+  - tipo VARCHAR(50)              -- Product type (e.g., Elétrico, Proteção)
+  - cor VARCHAR(30)               -- Color (e.g., Preto, Azul)
+  - qtd INT                       -- Quantity in stock
+  - preco DECIMAL(10,2)           -- Price
 
-No other `loja_{{n}}` tables exist.
+TABLE `loja_400`:                 -- Shoe store
+  - id SERIAL PRIMARY KEY
+  - produto VARCHAR(50)           -- Product name (typically "Tênis")
+  - marca VARCHAR(50)             -- Brand (e.g., Nike, Adidas, Jordan)
+  - tipo VARCHAR(50)              -- Model (e.g., Air Max)
+  - cor VARCHAR(30)               -- Color
+  - qtd INT                       -- Quantity in stock
+  - preco DECIMAL(10,2)           -- Price
+
+TABLE `loja_500`:                 -- Fast food restaurant
+  - id SERIAL PRIMARY KEY
+  - produto VARCHAR(50)           -- Food item (e.g., Cheeseburger)
+  - tipo VARCHAR(50)              -- Variation (e.g., Grande, 6 unidades)
+  - qtd INT                       -- Quantity in stock
+  - preco DECIMAL(10,2)           -- Price
 
 IMPORTANT:
  - Do NOT reference columns that do not exist.
@@ -65,6 +87,7 @@ No triple backticks or extra text. No explanations. Just the query.
 User Question: {input}
 SQLQuery:
 """
+
 
 sql_prompt = PromptTemplate(
     input_variables=["input"],
@@ -123,7 +146,7 @@ prompt_generator_prompt = PromptTemplate(
 Você é um especialista em mapear pedidos do comprador para uma consulta na tabela 'lojas'.
 
 A tabela 'lojas' tem colunas: id, tipo, numero.
- - 'tipo' pode ser 'Roupas', 'Jogos', 'Skate', etc.
+ - 'tipo' pode ser 'Roupas', 'Jogos', 'Skate', 'Tênis', 'WcDonalds'.
 
 O comprador quer: "{user_request}".
 
@@ -197,32 +220,69 @@ def get_store_coordinates(store_number: int, agent_id: str):
     agent_cache[agent_id]["store_position"] = coords
     return coords
 
+def generate_sql_for_loja(buyer_request: str, store_number: int, store_tipo: str) -> str:
+    store_schema = {
+        "Roupas": ["produto", "tipo", "qtd", "preco", "tamanho", "material", "estampa"],
+        "Jogos": ["produto", "tipo", "qtd", "preco", "console"],
+        "Skate": ["produto", "marca", "tipo", "cor", "qtd", "preco"],
+        "Tênis": ["produto", "marca", "tipo", "cor", "qtd", "preco"],
+        "WcDonalds": ["produto", "tipo", "qtd", "preco"]
+    }
+
+    columns = store_schema.get(store_tipo, ["produto", "tipo", "qtd", "preco"])
+    col_string = ", ".join(columns)
+
+    base_query = f"SELECT {col_string} FROM loja_{store_number} WHERE qtd > 0"
+
+    # Geração de filtros com base no pedido
+    filter_clauses = []
+    if "produto" in columns:
+        filter_clauses.append(f"produto ILIKE '%{buyer_request}%'")
+    if "tipo" in columns:
+        filter_clauses.append(f"tipo ILIKE '%{buyer_request}%'")
+    if "marca" in columns:
+        filter_clauses.append(f"marca ILIKE '%{buyer_request}%'")
+
+    if filter_clauses:
+        filters = " OR ".join(filter_clauses)
+        base_query += f" AND ({filters})"
+
+    return base_query
+
+
 def get_matching_items(buyer_request: str, store_number: int, agent_id: str):
     if "matching_items" in agent_cache[agent_id]:
         return agent_cache[agent_id]["matching_items"]
 
-    prompt_query = prompt_loja_prompt | llm
-    loja_prompt = prompt_query.invoke({"store_number": store_number, "user_request": buyer_request})
+    store_tipo = agent_cache[agent_id].get("store_tipo", "")
+    schema = {
+        "Roupas": ["produto", "tipo", "qtd", "preco", "tamanho", "material", "estampa"],
+        "Jogos": ["produto", "tipo", "qtd", "preco", "console"],
+        "Skate": ["produto", "marca", "tipo", "cor", "qtd", "preco"],
+        "Tênis": ["produto", "marca", "tipo", "cor", "qtd", "preco"],
+        "WcDonalds": ["produto", "tipo", "qtd", "preco"]
+    }
+    columns = schema.get(store_tipo, ["produto", "tipo", "qtd", "preco"])
+
+    # Query principal
+    loja_prompt = generate_sql_for_loja(buyer_request, store_number, store_tipo)
     _, rows = search_database(loja_prompt)
 
     matches = []
     for r in rows:
-        try:
-            matches.append({
-                "produto": r[0], "tipo": r[1], "qtd": int(r[2]),
-                "preco": float(r[3]), "tamanho": r[4], "material": r[5], "estampa": r[6]
-            })
-        except:
-            pass
+        item = {}
+        for i, col in enumerate(columns):
+            item[col] = r[i]
+        matches.append(item)
 
     if matches:
         agent_cache[agent_id]["matching_items"] = matches
         return matches
 
-    # fallback caso nada encontrado
+    # Fallback com preço estimado
     reference_price = 250.0
-    query = f"SELECT preco FROM loja_{store_number} WHERE produto ILIKE '%{buyer_request}%' LIMIT 1"
-    _, fallback_rows = search_database(query)
+    preco_query = f"SELECT preco FROM loja_{store_number} WHERE produto ILIKE '%{buyer_request}%' LIMIT 1"
+    _, fallback_rows = search_database(preco_query)
     if fallback_rows:
         try:
             reference_price = float(fallback_rows[0][0])
@@ -232,24 +292,22 @@ def get_matching_items(buyer_request: str, store_number: int, agent_id: str):
     min_price = reference_price * 0.8
     max_price = reference_price * 1.2
 
-    fallback_result = prompt_loja_fallback_chain | llm
-    fallback_prompt = fallback_result.invoke({
-        "store_number": store_number,
-        "user_request": buyer_request,
-        "min_price": min_price,
-        "max_price": max_price
-    })
+    col_string = ", ".join(columns)
+    fallback_query = f"""
+        SELECT {col_string}
+        FROM loja_{store_number}
+        WHERE qtd > 0 AND preco BETWEEN {min_price} AND {max_price}
+        ORDER BY preco ASC
+    """.strip()
 
-    _, rows = search_database(fallback_prompt)
+    _, rows = search_database(fallback_query)
+
     fallback_matches = []
     for r in rows:
-        try:
-            fallback_matches.append({
-                "produto": r[0], "tipo": r[1], "qtd": int(r[2]),
-                "preco": float(r[3]), "tamanho": r[4], "material": r[5], "estampa": r[6]
-            })
-        except:
-            pass
+        item = {}
+        for i, col in enumerate(columns):
+            item[col] = r[i]
+        fallback_matches.append(item)
 
     agent_cache[agent_id]["matching_items"] = fallback_matches
     return fallback_matches
@@ -274,9 +332,22 @@ def multi_table_search(buyer_request: str, agent_id: str) -> str:
         if items:
             lines.append("Itens Disponíveis:")
             for item in items:
-                lines.append(
-                    f" - {item['produto']} ({item['tipo']}), tamanho={item['tamanho']}, material={item['material']}, estampa={item['estampa']}, qtd={item['qtd']}, R${item['preco']}"
-                )
+                descricao = f" - {item['produto']} ({item['tipo']})"
+                if 'tamanho' in item:
+                    descricao += f", tamanho={item['tamanho']}"
+                if 'material' in item:
+                    descricao += f", material={item['material']}"
+                if 'estampa' in item:
+                    descricao += f", estampa={item['estampa']}"
+                if 'marca' in item:
+                    descricao += f", marca={item['marca']}"
+                if 'cor' in item:
+                    descricao += f", cor={item['cor']}"
+                if 'console' in item:
+                    descricao += f", console={item['console']}"
+                descricao += f", qtd={item['qtd']}, R${item['preco']}"
+                lines.append(descricao)
+
         else:
             lines.append("(Nenhum item encontrado ou recomendado)")
 
