@@ -75,7 +75,7 @@ MonoBehaviour:
   m_MinSize: {x: 300, y: 100}
   m_MaxSize: {x: 24288, y: 16192}
   vertical: 0
-  controlID: 98
+  controlID: 99
   draggingID: 0
 --- !u!114 &4
 MonoBehaviour:
@@ -139,7 +139,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 1
   m_Script: {fileID: 12006, guid: 0000000000000000e000000000000000, type: 0}
-  m_Name: ProjectBrowser
+  m_Name: ConsoleWindow
   m_EditorClassIdentifier: 
   m_Children: []
   m_Position:
@@ -148,14 +148,14 @@ MonoBehaviour:
     y: 689
     width: 1493
     height: 244
-  m_MinSize: {x: 231, y: 276}
-  m_MaxSize: {x: 10001, y: 10026}
-  m_ActualView: {fileID: 12}
+  m_MinSize: {x: 100, y: 100}
+  m_MaxSize: {x: 4000, y: 4000}
+  m_ActualView: {fileID: 17}
   m_Panes:
   - {fileID: 12}
   - {fileID: 17}
-  m_Selected: 0
-  m_LastSelected: 1
+  m_Selected: 1
+  m_LastSelected: 0
 --- !u!114 &7
 MonoBehaviour:
   m_ObjectHideFlags: 52
@@ -251,7 +251,7 @@ MonoBehaviour:
   m_MinSize: {x: 200, y: 100}
   m_MaxSize: {x: 16192, y: 16192}
   vertical: 1
-  controlID: 39
+  controlID: 41
   draggingID: 0
 --- !u!114 &11
 MonoBehaviour:
@@ -277,7 +277,7 @@ MonoBehaviour:
   m_MinSize: {x: 200, y: 50}
   m_MaxSize: {x: 16192, y: 8096}
   vertical: 0
-  controlID: 40
+  controlID: 42
   draggingID: 0
 --- !u!114 &12
 MonoBehaviour:
@@ -326,7 +326,7 @@ MonoBehaviour:
     m_SkipHidden: 0
     m_SearchArea: 1
     m_Folders:
-    - Assets/Scenes
+    - Assets
     m_Globs: []
     m_ProductIds: 
     m_AnyWithAssetOrigin: 0
@@ -336,16 +336,16 @@ MonoBehaviour:
   m_ViewMode: 1
   m_StartGridSize: 40
   m_LastFolders:
-  - Assets/Scenes
+  - Assets
   m_LastFoldersGridSize: 40
   m_LastProjectPath: C:\Users\matra\Documents\Semestre_8\PFE\PFE-NTT\NTT_Shopping
   m_LockTracker:
     m_IsLocked: 0
   m_FolderTreeState:
-    scrollPos: {x: 0, y: 234}
-    m_SelectedIDs: ceaf0000
-    m_LastClickedID: 45006
-    m_ExpandedIDs: 00000000c4ad0000c6ad0000c8ad0000caad0000ccad0000cead0000d0ad0000d2ad0000c6af00000ad9010000ca9a3b
+    scrollPos: {x: 0, y: 79}
+    m_SelectedIDs: 46b10000
+    m_LastClickedID: 45382
+    m_ExpandedIDs: 0000000046b1000048b100004ab100004cb100004eb1000050b1000052b1000054b1000000ca9a3b
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -374,7 +374,7 @@ MonoBehaviour:
     scrollPos: {x: 0, y: 0}
     m_SelectedIDs: 
     m_LastClickedID: 0
-    m_ExpandedIDs: 00000000c4ad0000c6ad0000c8ad0000caad0000ccad0000cead0000d0ad0000d2ad0000
+    m_ExpandedIDs: 0000000046b1000048b100004ab100004cb100004eb1000050b1000052b1000054b10000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -400,9 +400,9 @@ MonoBehaviour:
       m_Icon: {fileID: 0}
       m_ResourceFile: 
   m_ListAreaState:
-    m_SelectedInstanceIDs: 
-    m_LastClickedInstanceID: 0
-    m_HadKeyboardFocusLastEvent: 1
+    m_SelectedInstanceIDs: 5aa90000
+    m_LastClickedInstanceID: 43354
+    m_HadKeyboardFocusLastEvent: 0
     m_ExpandedInstanceIDs: c6230000aef7000000000000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
@@ -520,23 +520,23 @@ MonoBehaviour:
   m_SceneHierarchy:
     m_TreeViewState:
       scrollPos: {x: 0, y: 0}
-      m_SelectedIDs: 5a010200
-      m_LastClickedID: 131418
-      m_ExpandedIDs: 5ee1fdffb2e9fdff34ecfdff54f4fdff72f9fdffb24afeffa64efeffae4efeffb24efeffc64efefff24efefffa4efeff1450feff285afeffe25efeff687dfefff27ffeff6e85feff808cfeff32b0feff3ab0feff3eb0feff52b0feff7eb0feff86b0feff90b0feff60b1feff68b1feff6cb1feff80b1feffacb1feffb4b1feffbab1feffbeb2feff1cb7feffb2bdfeff86cbfeff7ed6feffcee7fefff2f0feffe2f8feffe0fdfeffb405ffff1c0bffff4814ffff4c14ffff5014ffff5414ffff5814ffff8414ffffb014ffffb814ffff7219ffff0a20ffffa026ffffc637ffff143bffffc43fffff6a46ffff6053ffff9657ffff3a5effff5868ffff086fffffb079ffff528fffff5096ffff2c9affff2a9fffff24c1ffffa2c5ffff20fbffff12a7000070bc0000b2bf00008acd00005cd1000046d60000d0d6000098df0000aadf000012e00000eaed00007e02010020040100e805010066230100682601003640010012420100c8480100da48010042490100464b0100484c01009a590100a46b0100c2760100187701003c7701007c860100c8870100e6880100c4a8010004ad01005aad010022ae010020ce010038d8010046d801003a030200
+      m_SelectedIDs: 5ea70000
+      m_LastClickedID: 42846
+      m_ExpandedIDs: 0cf8ffff14f8ffff18f8ffff2cf8ffff58f8ffff60f8ffff68f8ffff20fbffff4ca6000082a700003ea900005aa90000
       m_RenameOverlay:
         m_UserAcceptedRename: 0
-        m_Name: Groundplane Terra
-        m_OriginalName: Groundplane Terra
+        m_Name: 
+        m_OriginalName: 
         m_EditFieldRect:
           serializedVersion: 2
           x: 0
           y: 0
           width: 0
           height: 0
-        m_UserData: 119048
+        m_UserData: 0
         m_IsWaitingForDelay: 0
         m_IsRenaming: 0
-        m_OriginalEventType: 4
+        m_OriginalEventType: 11
         m_IsRenamingFilename: 0
         m_TrimLeadingAndTrailingWhitespace: 0
         m_ClientGUIView: {fileID: 5}
@@ -1098,9 +1098,9 @@ MonoBehaviour:
   m_AudioPlay: 0
   m_DebugDrawModesUseInteractiveLightBakingData: 0
   m_Position:
-    m_Target: {x: 0.40616265, y: 6.958948, z: 5.457362}
+    m_Target: {x: -0.9803767, y: 4.3318615, z: 4.2314653}
     speed: 2
-    m_Value: {x: 0.40616265, y: 6.958948, z: 5.457362}
+    m_Value: {x: -0.9803767, y: 4.3318615, z: 4.2314653}
   m_RenderMode: 0
   m_CameraMode:
     drawMode: 0
@@ -1146,13 +1146,13 @@ MonoBehaviour:
     m_GridAxis: 1
     m_gridOpacity: 0.5
   m_Rotation:
-    m_Target: {x: 0.021153817, y: 0.9319863, z: -0.3602859, w: 0.04890867}
+    m_Target: {x: -0.044806767, y: -0.95595586, z: 0.23508018, w: -0.17360419}
     speed: 2
-    m_Value: {x: 0.02168074, y: 0.93133277, z: -0.3600299, w: 0.05027533}
+    m_Value: {x: -0.044683523, y: -0.95525956, z: 0.23643236, w: -0.17199498}
   m_Size:
-    m_Target: 1.3856407
+    m_Target: 0.76154315
     speed: 2
-    m_Value: 1.3856407
+    m_Value: 0.79742736
   m_Ortho:
     m_Target: 0
     speed: 2
