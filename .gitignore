@@ -77,5 +77,8 @@ crashlytics-build.properties
 venv
 .env
 
+/teste/
+
+
 __pycache__
 
