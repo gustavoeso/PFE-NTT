@@ -326,10 +326,9 @@ def get_matching_items(buyer_request: str, store_number: int, agent_id: str):
     return fallback_matches
 
 
-def multi_table_search(buyer_request: str, agent_id: str) -> str:
+def multi_table_search(buyer_request: str, agent_id: str, store_number: int) -> str:
     lines = []
     try:
-        store_number = get_store_number(buyer_request, agent_id)
         store_id = agent_cache[agent_id].get("store_id")
         store_tipo = agent_cache[agent_id].get("store_tipo")
 

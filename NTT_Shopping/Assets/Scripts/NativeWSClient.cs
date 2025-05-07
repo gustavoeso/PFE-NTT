@@ -71,7 +71,6 @@ public class NativeWSClient : MonoBehaviour
     {
         string requestId = Guid.NewGuid().ToString();
         string json = $"{{\"action\": \"{action}\", \"request_id\": \"{requestId}\"{(conteudoJson != "" ? ", " + conteudoJson : "")}}}";
-        Debug.Log("Enviando para WS: " + json);
 
         var tcs = new TaskCompletionSource<string>();
         pendingResponses[requestId] = tcs;
@@ -89,19 +88,15 @@ public class NativeWSClient : MonoBehaviour
         return await tcs.Task;
     }
 
-    // === MÉTODOS ADAPTADOS ===
-
     public async Task SendStartMessage()
     {
         string json = "{\"action\": \"start\"}";
-        Debug.Log("Enviando mensagem de início: " + json);
         await websocket.SendText(json);
     }
 
     public async Task SetBuyerPreferences(List<string> desired_items, List<float> prices)
     {
         string json = $"{{\"action\": \"setBuyerPreferences\", \"desired_item\": {JsonUtility.ToJson(new Wrapper<string> { list = desired_items })}, \"max_price\": {JsonUtility.ToJson(new Wrapper<float> { list = prices })}}}";
-        Debug.Log("Enviando preferências: " + json);
         await websocket.SendText(json);
     }
 
@@ -111,8 +106,6 @@ public class NativeWSClient : MonoBehaviour
         public List<T> list;
     }
 
-
-    // ✅ Com resposta
     public async Task<string> SendMessageToStore(string prompt)
     {
         string json = $"\"prompt\": \"{prompt}\"";

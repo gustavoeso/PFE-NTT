@@ -73,9 +73,8 @@ public class Dialogue : MonoBehaviour
 
         UpdateCharacterVisual(isLeftCharacterTalking);
 
-        dialogueFinishedTCS = new TaskCompletionSource<bool>();
         StartCoroutine(TypeLine(sentence));
-        return dialogueFinishedTCS.Task;
+        return Task.CompletedTask;
     }
 
 

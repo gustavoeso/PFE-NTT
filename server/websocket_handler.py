@@ -47,7 +47,7 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
             elif action == "store_request":
                 request_id = data_json.get("request_id", "undefined")
                 store_number = get_store_number(agent_cache[agent_id]["desired_items"][0], agent_id)
-                stock_info = multi_table_search(agent_cache[agent_id]["desired_items"][0], store_number, agent_id)
+                stock_info = multi_table_search(agent_cache[agent_id]["desired_items"][0], agent_id, store_number)
 
                 history_text = "\n".join(f"{m['role'].upper()}: {m['text']}" for m in agent_memory[agent_id])
 

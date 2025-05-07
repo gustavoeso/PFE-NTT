@@ -24,7 +24,7 @@ public class Agent : MonoBehaviour
     }
 
     // Método base para iniciar uma conversa (pode ser sobrescrito)
-    public virtual Task StartConversation(string dialoguePartner)
+    public virtual Task StartConversation(string dialoguePartner, string itemName = "")
     {
         if (navMeshAgent != null)
         {

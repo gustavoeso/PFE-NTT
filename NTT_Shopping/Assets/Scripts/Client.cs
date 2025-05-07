@@ -89,11 +89,7 @@ public class Client : Agent
         return;
     }
 
-    public override async Task StartConversation(string dialoguePartner)
-    {
-        await StartConversation(dialoguePartner, requestedItems[currentItemIndex]);
-    }
-    public async Task StartConversation(string dialoguePartner, string itemName = "")
+    public override async Task StartConversation(string dialoguePartner, string itemName = "")
     {
         if (dialoguePartner == "Store")
         {
@@ -200,7 +196,9 @@ public class Client : Agent
             await TTSManager.Instance.SpeakAsync(buyerMessage, TTSManager.Instance.voiceClient);
 
             // Buyer -> store
+            Debug.Log($"[Buyer -> Store] {buyerMessage}");
             string storeJson = await websocketClient.SendMessageToStore(buyerMessage);
+            Debug.Log($"[Client] JSON recebido da loja: {storeJson}");
             string storeMessage = ExtractResponse(storeJson);
             Debug.Log($"[Store -> Buyer] {storeMessage}");
 
@@ -327,8 +325,6 @@ public class Client : Agent
 
             Debug.Log($"[Client] Iniciando compra do item {i+1}/{requestedItems.Count}: '{item}' (R${price})");
 
-            await websocketClient.SetBuyerPreferences(new List<string> { item }, new List<float> { price });
-
             currentItemIndex = i;
 
             hasAskedGuide = false;
@@ -356,7 +352,9 @@ public class Client : Agent
             {
                 navMeshAgent.SetDestination(targetStore.transform.position);
                 await WaitUntilCloseTo(targetStore.transform.position);
-                await StartConversation("Store");
+                _ = StartConversation("Store", item);
+                Debug.Log("LOOP");
+                await Task.Delay(5000);
             }
 
             // Esperar um pouco antes do próximo
