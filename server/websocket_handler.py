@@ -30,8 +30,8 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
                 result = buyer_chain.invoke({
                     "history": history_text,
                     "seller_utterance": prompt,
-                    "desired_item": agent_cache[agent_id]["desired_item"],
-                    "max_price": agent_cache[agent_id]["max_price"],
+                    "desired_item": agent_cache[agent_id]["desired_item"][0],
+                    "max_price": agent_cache[agent_id]["max_price"][0],
                     "format_instructions": parser.get_format_instructions()
                 })
 
@@ -46,8 +46,8 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
 
             elif action == "store_request":
                 request_id = data_json.get("request_id", "undefined")
-                store_number = get_store_number(prompt, agent_id)
-                stock_info = multi_table_search(prompt, agent_id)
+                store_number = get_store_number(agent_cache[agent_id]["desired_items"][0], agent_id)
+                stock_info = multi_table_search(agent_cache[agent_id]["desired_items"][0], store_number, agent_id)
 
                 history_text = "\n".join(f"{m['role'].upper()}: {m['text']}" for m in agent_memory[agent_id])
 
@@ -78,7 +78,10 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
                 request_id = data_json.get("request_id", "undefined")
 
                 try:
-                    store_number = get_store_number(prompt, agent_id)
+                    # 🆕 Pegando o item da rodada atual
+                    desired_item = agent_cache[agent_id]["desired_items"][0]
+
+                    store_number = get_store_number(desired_item, agent_id)
                     store_id = agent_cache[agent_id].get("store_id")
                     store_tipo = agent_cache[agent_id].get("store_tipo")
                     coords = get_store_coordinates(store_number, agent_id)
@@ -96,8 +99,8 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
                         )
 
                     print(f"[INFO] Enviando resposta para o cliente: {answer}")
-
                     agent_memory[agent_id].append({"role": "guide", "text": answer})
+
                     await websocket.send_text(json.dumps({
                         "request_id": request_id,
                         "answer": answer,
@@ -111,18 +114,37 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
                         "final_offer": True
                     }))
 
+
             elif action == "setBuyerPreferences":
                 try:
-                    desired_item = data_json.get("desired_item", "camiseta branca")
-                    max_price = data_json.get("max_price", 60)
+                    desired_items = data_json.get("desired_item", [])
+                    max_prices = data_json.get("max_price", [])
 
-                    agent_cache[agent_id]["desired_item"] = desired_item
-                    agent_cache[agent_id]["max_price"] = max_price
+                    # compatibilidade: se veio string (caso antigo), coloca em lista
+                    if isinstance(desired_items, str):
+                        desired_items = [desired_items]
+                    if isinstance(max_prices, (int, float, str)):
+                        max_prices = [float(max_prices)]
 
-                    await websocket.send_text(json.dumps({"response": f"Preferencias salvas: item={desired_item}, max={max_price}."}))
+                    # conversão extra se veio {"list": [...]} do Unity
+                    if isinstance(desired_items, dict) and "list" in desired_items:
+                        desired_items = desired_items["list"]
+                    if isinstance(max_prices, dict) and "list" in max_prices:
+                        max_prices = max_prices["list"]
+
+                    if len(desired_items) != len(max_prices):
+                        raise ValueError("Número de produtos e preços não corresponde.")
+
+                    agent_cache[agent_id]["desired_items"] = desired_items
+                    agent_cache[agent_id]["max_prices"] = max_prices
+
+                    await websocket.send_text(json.dumps({
+                        "response": f"Preferências salvas: itens={desired_items}, preços={max_prices}"
+                    }))
                 
                 except ValueError as e:
                     await websocket.send_text(json.dumps({"response": str(e)}))
+
 
     except WebSocketDisconnect:
         print(f"[INFO] Desconectado: {agent_id}")

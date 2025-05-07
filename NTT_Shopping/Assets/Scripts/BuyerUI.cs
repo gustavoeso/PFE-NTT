@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Globalization;
+using System.Collections.Generic;
+
 using TMPro;
 using System.Threading.Tasks; // Se estiver usando TextMesh Pro
 
@@ -19,44 +21,59 @@ public class BuyerUI : MonoBehaviour
 
     public async Task OnConfirmButtonClicked()
     {
-        
-        // 1) Ler o texto dos campos
-        string item = itemDesejadoInput.text;
+        string rawProdutos = itemDesejadoInput.text;
+        string rawPrecos = precoMaximoInput.text;
+
+        string[] produtos = rawProdutos.Split(',');
+        string[] precosStr = rawPrecos.Split(',');
+
+        if (produtos.Length != precosStr.Length)
+        {
+            Debug.LogError("Número de produtos e preços não coincidem!");
+            return;
+        }
+
+        List<string> requestedItems = new List<string>();
+        List<float> maxPrices = new List<float>();
+
+        for (int i = 0; i < produtos.Length; i++)
+        {
+            string produto = produtos[i].Trim();
+            if (string.IsNullOrEmpty(produto))
+            {
+                Debug.LogWarning($"Produto vazio na posição {i}");
+                continue;
+            }
+
+            if (!float.TryParse(precosStr[i].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out float preco))
+            {
+                Debug.LogWarning($"Preço inválido para o produto '{produto}': '{precosStr[i]}'");
+                continue;
+            }
+
+            requestedItems.Add(produto);
+            maxPrices.Add(preco);
+        }
+
+        if (requestedItems.Count == 0)
+        {
+            Debug.LogWarning("Nenhum produto válido foi inserido.");
+            return;
+        }
+
         Client[] clients = Object.FindObjectsByType<Client>(FindObjectsSortMode.None);
-        if (clients.Length == 0) {
-            Debug.LogError("Client component not found in the scene.");
-            return;
-        }
-        else if (clients.Length > 1) {
-            Debug.LogError("Multiple Client components found in the scene. Please ensure only one is present.");
-            return;
-        }
-        else if (clients[0] == null)
+        if (clients.Length != 1 || clients[0] == null)
         {
-            Debug.LogError("Client component not found on this GameObject.");
+            Debug.LogError("Erro ao localizar instância única de Client.");
             return;
         }
-        else {
-            clients[0].requestedItem = item;
-        }
 
-        float precoMaximo;
-        if (!float.TryParse(precoMaximoInput.text, NumberStyles.Any, CultureInfo.InvariantCulture, out precoMaximo))
-        {
-            precoMaximo = 0f;
-        }
+        await clients[0].SetDesiredPurchase(requestedItems, maxPrices);
+        clients[0].BeginMovement();
 
-        // 2) Passar para o Client (ou fazer o que precisar)
-        Debug.Log("(ClienteUI) Enviando dados para o Client...");
-        await client.SetDesiredPurchase(item, precoMaximo);
-
-        // 3) Sinalizar ao Client para iniciar a movimentação
-        client.BeginMovement();
-        
-        Debug.Log($"(BuyerUI) Produto={item}, Preço Máximo={precoMaximo}");
-        
-        // 4) Limpar os campos de texto
+        Debug.Log($"(BuyerUI) Produtos=[{string.Join(", ", requestedItems)}], Preços Máximos=[{string.Join(", ", maxPrices)}]");
         inputPanel.SetActive(false);
     }
+
     
 }

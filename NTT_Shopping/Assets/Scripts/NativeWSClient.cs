@@ -98,12 +98,19 @@ public class NativeWSClient : MonoBehaviour
         await websocket.SendText(json);
     }
 
-    public async Task SetBuyerPreferences(string desired_item, string price)
+    public async Task SetBuyerPreferences(List<string> desired_items, List<float> prices)
     {
-        string json = $"{{\"action\": \"setBuyerPreferences\", \"desired_item\": \"{desired_item}\", \"max_price\": \"{price}\"}}";
+        string json = $"{{\"action\": \"setBuyerPreferences\", \"desired_item\": {JsonUtility.ToJson(new Wrapper<string> { list = desired_items })}, \"max_price\": {JsonUtility.ToJson(new Wrapper<float> { list = prices })}}}";
         Debug.Log("Enviando preferências: " + json);
         await websocket.SendText(json);
     }
+
+    [System.Serializable]
+    private class Wrapper<T>
+    {
+        public List<T> list;
+    }
+
 
     // ✅ Com resposta
     public async Task<string> SendMessageToStore(string prompt)

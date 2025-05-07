@@ -8510,6 +8510,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 737861893}
     m_Modifications:
+    - target: {fileID: 2632827245528582471, guid: 8871f05d22c6360449a4f1d305314a0b, type: 3}
+      propertyPath: startMovement
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7775843009472213491, guid: 8871f05d22c6360449a4f1d305314a0b, type: 3}
       propertyPath: m_Name
       value: Client
@@ -13470,7 +13474,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1776692075
 RectTransform:
   m_ObjectHideFlags: 0
