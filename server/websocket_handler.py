@@ -30,8 +30,8 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
                 result = buyer_chain.invoke({
                     "history": history_text,
                     "seller_utterance": prompt,
-                    "desired_item": agent_cache[agent_id]["desired_item"][0],
-                    "max_price": agent_cache[agent_id]["max_price"][0],
+                    "desired_item": agent_cache[agent_id]["desired_items"][0],
+                    "max_price": agent_cache[agent_id]["max_prices"][0],
                     "format_instructions": parser.get_format_instructions()
                 })
 

@@ -57,9 +57,9 @@ public class NativeWSClient : MonoBehaviour
 
     void Update()
     {
-#if !UNITY_WEBGL || UNITY_EDITOR
-        websocket?.DispatchMessageQueue();
-#endif
+    #if !UNITY_WEBGL || UNITY_EDITOR
+            websocket?.DispatchMessageQueue();
+    #endif
     }
 
     async void OnApplicationQuit()
@@ -69,24 +69,37 @@ public class NativeWSClient : MonoBehaviour
 
     private async Task<string> SendTextWithAnswer(string action, string conteudoJson = "")
     {
-        string requestId = Guid.NewGuid().ToString();
-        string json = $"{{\"action\": \"{action}\", \"request_id\": \"{requestId}\"{(conteudoJson != "" ? ", " + conteudoJson : "")}}}";
-
-        var tcs = new TaskCompletionSource<string>();
-        pendingResponses[requestId] = tcs;
-        
-        await websocket.SendText(json);
-
-        var timeout = Task.Delay(40000);
-        var completed = await Task.WhenAny(tcs.Task, timeout);
-        if (completed == timeout)
+        try
         {
-            pendingResponses.Remove(requestId);
-            throw new TimeoutException($"[WS] Timeout aguardando resposta com request_id={requestId}");
-        }
+            string requestId = Guid.NewGuid().ToString();
+            string json = $"{{\"action\": \"{action}\", \"request_id\": \"{requestId}\"{(conteudoJson != "" ? ", " + conteudoJson : "")}}}";
+            var tcs = new TaskCompletionSource<string>();
+            pendingResponses[requestId] = tcs;
 
-        return await tcs.Task;
+            Debug.Log("[Cliente] << " + json);
+            await websocket.SendText(json);  // <- possível ponto de falha
+            Debug.Log("[Cliente] >> " + json);
+
+            var timeout = Task.Delay(40000);
+            Debug.Log("Esperando Task.WhenAny...");
+            var completed = await Task.WhenAny(tcs.Task, timeout);
+            Debug.Log("Task.WhenAny retornou.");
+
+            if (completed == timeout)
+            {
+                pendingResponses.Remove(requestId);
+                throw new TimeoutException($"[WS] Timeout aguardando resposta com request_id={requestId}");
+            }
+
+            return await tcs.Task;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[SendTextWithAnswer] EXCEÇÃO: {ex.Message}\n{ex.StackTrace}");
+            throw; // Propaga para ser visível em StartConversation se necessário
+        }
     }
+
 
     public async Task SendStartMessage()
     {

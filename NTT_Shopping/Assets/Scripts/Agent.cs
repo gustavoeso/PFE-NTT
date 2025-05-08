@@ -17,14 +17,13 @@ public class Agent : MonoBehaviour
         // Generate a random or unique ID for this agent.
         // Example: a short substring of a full GUID
         myAgentId = System.Guid.NewGuid().ToString().Substring(0, 8);
-        Debug.Log($"[Agent] Generated agent_id={myAgentId}");
 
         animator = GetComponent<Animator>();
         navMeshAgent = GetComponent<UnityEngine.AI.NavMeshAgent>();
     }
 
     // Método base para iniciar uma conversa (pode ser sobrescrito)
-    public virtual Task StartConversation(string dialoguePartner, string itemName = "")
+    public virtual Task StartConversation(string dialoguePartner)
     {
         if (navMeshAgent != null)
         {

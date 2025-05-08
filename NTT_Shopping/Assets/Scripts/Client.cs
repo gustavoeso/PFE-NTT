@@ -14,7 +14,7 @@ public class Client : Agent
     private Rigidbody rb;
     public float speed = 2.0f;
 
-    public string requestedItem = "";  // Com o codigo novo, n precisa mais disso, mas vou deixar
+    public string requestedItem = "Produto X"; 
     public List<string> requestedItems = new List<string>();
     public List<float> maxPrices = new List<float>();
     private int currentItemIndex = 0;
@@ -22,13 +22,9 @@ public class Client : Agent
 
 
     private bool hasAskedGuide = false;
-    private bool onWayToStore = false;
-    private bool hasTalkedToStore = false;
     private bool storeConversationInProgress = false;
-    private bool isLeavingStore = false;
     private bool finalOffer = false;
     private Store targetStore = null;
-    public bool startMovement = false;
     private NativeWSClient websocketClient;
 
     protected override async void Start()
@@ -50,13 +46,6 @@ public class Client : Agent
 
     void Update()
     {
-        if (!startMovement)
-        {
-            // Se não pode se mover, garantir que navMeshAgent.isStopped = true;
-            navMeshAgent.isStopped = true;
-            return;
-        }
-
         float curSpeed = navMeshAgent.velocity.magnitude;
         animator.SetFloat("Speed", curSpeed);
 
@@ -64,22 +53,6 @@ public class Client : Agent
         {
             Quaternion targetRotation = Quaternion.LookRotation(navMeshAgent.velocity.normalized);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 10f);
-        }
-
-        if (onWayToStore && targetStore != null && !hasTalkedToStore && !storeConversationInProgress && !isLeavingStore)
-        {
-            float distance = Vector3.Distance(transform.position, targetStore.transform.position);
-            Debug.Log($"[Client] Distância atual até a loja: {distance:F2}");
-            Debug.DrawLine(transform.position, targetStore.transform.position, Color.green);
-
-            if (distance < 1.5f)
-            {
-                Debug.Log("[Client] Chegou perto da loja, iniciando conversa...");
-                onWayToStore = false;
-                hasTalkedToStore = true;
-                navMeshAgent.ResetPath();
-                _ = StartConversation("Store");
-            }
         }
     }
 
@@ -89,7 +62,7 @@ public class Client : Agent
         return;
     }
 
-    public override async Task StartConversation(string dialoguePartner, string itemName = "")
+    public override async Task StartConversation(string dialoguePartner)
     {
         if (dialoguePartner == "Store")
         {
@@ -109,7 +82,7 @@ public class Client : Agent
             if (hasAskedGuide) return;
             hasAskedGuide = true;
 
-            string prompt = "Estou procurando o produto: " + itemName;
+            string prompt = "Estou procurando o produto: " + requestedItem;
 
             Dialogue.Instance.InitializeDialogue("client", "guide");
             await Dialogue.Instance.StartDialogue(prompt, true);
@@ -117,12 +90,10 @@ public class Client : Agent
 
             // (1) Envia via WebSocket com ação "guide_request"
             string guideJson = await websocketClient.SendMessageToGuide(prompt);
-            Debug.Log("[Client] JSON recebido do guia: " + guideJson);
 
             // (2) Extrai a resposta
             AgentResponse response = JsonUtility.FromJson<AgentResponse>(guideJson);
             string guideAnswer = response.answer;
-            Debug.Log("[Client] guideAnswer=" + guideAnswer);
 
             await Dialogue.Instance.StartDialogue(guideAnswer, false);
             await TTSManager.Instance.SpeakAsync(guideAnswer, TTSManager.Instance.voiceGuide);
@@ -130,12 +101,10 @@ public class Client : Agent
 
             // (3) Extração de número da loja e movimentação
             string storeNumber = ExtractStoreNumber(guideAnswer);
-            Debug.Log("[Client] Número da loja extraído: " + storeNumber);
 
             targetStore = FindStore(storeNumber);
             if (targetStore != null)
             {
-                Debug.Log("[Client] Loja encontrada na cena com ID: " + storeNumber);
                 Vector3 storePosition = new Vector3(
                     targetStore.transform.position.x,
                     transform.position.y,
@@ -145,14 +114,9 @@ public class Client : Agent
                 NavMeshHit hit;
                 if (NavMesh.SamplePosition(storePosition, out hit, 2.0f, NavMesh.AllAreas))
                 {
-                    Debug.Log($"[Client] Caminho válido para a loja! Indo para: {hit.position}");
                     navMeshAgent.isStopped = false;
                     navMeshAgent.speed = speed;
                     navMeshAgent.SetDestination(hit.position);
-                    onWayToStore = true;
-
-                    bool pathValid = navMeshAgent.CalculatePath(hit.position, new NavMeshPath());
-                    Debug.Log($"[Client] Caminho gerado com sucesso? {pathValid}");
                 }
                 else
                 {
@@ -170,19 +134,28 @@ public class Client : Agent
             storeConversationFinishedTCS = new TaskCompletionSource<bool>();
             await RunStoreConversationLoop();
             await storeConversationFinishedTCS.Task;
+            if (requestedItems[currentItemIndex + 1] != null)
+            {
+                currentItemIndex++;
+                requestedItem = requestedItems[currentItemIndex];
+                GameObject guide = GameObject.FindGameObjectWithTag("Guide");
+                if (guide != null && navMeshAgent != null)
+                {
+                    navMeshAgent.SetDestination(guide.transform.position);
+                }
+            }
+            else
+            {
+                GoToExit();
+            }
+            storeConversationInProgress = false;
         }
 
         canCollide = true;
-
-        if (dialoguePartner == "Store")
-        {
-            storeConversationInProgress = false;
-        }
     }
 
     private async Task RunStoreConversationLoop()
     {
-        Debug.Log("[Client] Iniciando conversa com a loja (RunStoreConversationLoop)");
         int maxTurns = 6;
 
         string currentItem = requestedItems[currentItemIndex];
@@ -212,8 +185,6 @@ public class Client : Agent
 
             if (finalOffer)
             {
-                Debug.Log($"[Buyer] Decisão detectada: {buyerMessage}");
-
                 string resumoJson = await websocketClient.RequestSummary(storeMessage);
                 string resumo = ExtractResponse(resumoJson);
 
@@ -221,13 +192,11 @@ public class Client : Agent
 
                 if (confirmada)
                 {
-                    Debug.Log("[Humano] Confirmou a decisão.");
                     await Dialogue.Instance.StartDialogue("Vou Levar o Produto. Muito Obrigado!", true);
                     await TTSManager.Instance.SpeakAsync("Vou Levar o Produto. Muito Obrigado!", TTSManager.Instance.voiceClient);
                 }
                 else
                 {
-                    Debug.Log("[Humano] Recusou a decisão.");
                     await Dialogue.Instance.StartDialogue("Não vou levar o produto. Muito Obrigado!", true);
                     await TTSManager.Instance.SpeakAsync("Não vou levar o produto. Muito Obrigado!", TTSManager.Instance.voiceClient);
                 }
@@ -237,9 +206,6 @@ public class Client : Agent
                 return;
             }
         }
-
-        Debug.LogWarning("[Client] Conversa atingiu o limite de turnos sem decisão. Forçando decisão...");
-
         string forcedDecision = "Estou a muito tempo aqui, perdi o interesse. Obrigado!";
         await Dialogue.Instance.StartDialogue(forcedDecision, true);
         await TTSManager.Instance.SpeakAsync(forcedDecision, TTSManager.Instance.voiceClient);
@@ -250,7 +216,6 @@ public class Client : Agent
 
     private void GoToExit()
     {
-        isLeavingStore = true;
         Exit exitNow = FindExit();
         if (exitNow != null)
         {
@@ -313,83 +278,16 @@ public class Client : Agent
         await websocketClient.SetBuyerPreferences(requestedItems, maxPrices);
     }
 
-    private async Task ExecutePurchaseSequence()
-    {
-        Debug.Log("[Client] Iniciando sequência de compras...");
-        for (int i = 0; i < requestedItems.Count; i++)
-        {
-            Debug.Log($"[Client] Rodada {i}: item={requestedItems[i]}");
-
-            string item = requestedItems[i];
-            float price = (i < maxPrices.Count) ? maxPrices[i] : 0f;
-
-            Debug.Log($"[Client] Iniciando compra do item {i+1}/{requestedItems.Count}: '{item}' (R${price})");
-
-            currentItemIndex = i;
-
-            hasAskedGuide = false;
-            hasTalkedToStore = false;
-            storeConversationInProgress = false;
-            isLeavingStore = false;
-            targetStore = null;
-
-            // Falar com o Guia e obter loja
-            GameObject guide = GameObject.FindGameObjectWithTag("Guide");
-            if (guide != null && navMeshAgent != null)
-            {
-                Debug.Log("[Client] Indo até o Guia");
-                navMeshAgent.SetDestination(guide.transform.position);
-                await WaitUntilCloseTo(guide.transform.position);
-                await StartConversation("Guide", item);
-            }
-            else
-            {
-                Debug.LogError("Guia com tag 'Guide' não encontrado na cena.");
-            }
-
-            // Esperar chegar na loja
-            if (targetStore != null)
-            {
-                navMeshAgent.SetDestination(targetStore.transform.position);
-                await WaitUntilCloseTo(targetStore.transform.position);
-                _ = StartConversation("Store", item);
-                Debug.Log("LOOP");
-                await Task.Delay(5000);
-            }
-
-            // Esperar um pouco antes do próximo
-            await Task.Delay(1000);
-        }
-
-        Debug.Log("[Client] Compras finalizadas. Indo para a saída.");
-        GoToExit();
-    }
-
-    private async Task WaitUntilCloseTo(Vector3 destination, float threshold = 1.5f)
-    {
-        int timeout = 0;
-
-        while (Vector3.Distance(transform.position, destination) > threshold)
-        {
-            Debug.Log($"[Client] Esperando aproximação... Atual={transform.position}, Destino={destination}");
-
-            if (timeout++ > 100) // ~20 segundos
-            {
-                Debug.LogWarning("[Client] Timeout ao tentar se aproximar!");
-                break;
-            }
-
-            await Task.Delay(200);
-        }
-
-        navMeshAgent.ResetPath();
-    }
-
     public void BeginMovement()
     {
         Debug.Log("[Client] BeginMovement chamado");
-        startMovement = true;
-        _ = ExecutePurchaseSequence();
+        navMeshAgent.isStopped = false;
+        GameObject guide = GameObject.FindGameObjectWithTag("Guide");
+        if (guide != null && navMeshAgent != null)
+        {
+            navMeshAgent.SetDestination(guide.transform.position);
+        }
+        requestedItem = requestedItems[currentItemIndex];
     }
 
 

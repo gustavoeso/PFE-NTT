@@ -11,7 +11,6 @@ public class Store : MonoBehaviour
             Client clientAgent = other.GetComponent<Client>();
             if (clientAgent != null)
             {
-                Debug.Log("[Store] Iniciando conversa com o cliente...");
                 await clientAgent.StartConversation("Store");
             }
         }
