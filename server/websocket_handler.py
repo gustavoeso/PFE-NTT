@@ -84,18 +84,17 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
                     store_number = get_store_number(desired_item, agent_id)
                     store_id = agent_cache[agent_id].get("store_id")
                     store_tipo = agent_cache[agent_id].get("store_tipo")
-                    coords = get_store_coordinates(store_number, agent_id)
+                    # coords = get_store_coordinates(store_number, agent_id)
 
-                    if coords:
-                        x, y, z = coords
-                        answer = (
-                            f"Loja encontrada: id={store_id}, tipo='{store_tipo}', número={store_number}. "
-                            f"Localização: x={x}, y={y}, z={z}."
-                        )
-                    else:
-                        answer = (
-                            f"Loja encontrada: id={store_id}, tipo='{store_tipo}', número={store_number}, "
-                            "mas posição não cadastrada."
+                    # if coords:
+                    #     x, y, z = coords
+                    #     answer = (
+                    #         f"Loja encontrada: id={store_id}, tipo='{store_tipo}', número={store_number}. "
+                    #         f"Localização: x={x}, y={y}, z={z}."
+                    #     )
+                    # else:
+                    answer = (
+                        f"Loja encontrada: id={store_id}, tipo='{store_tipo}', número={store_number}"
                         )
 
                     print(f"[INFO] Enviando resposta para o cliente: {answer}")

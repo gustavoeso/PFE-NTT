@@ -23,12 +23,6 @@ TABLE `lojas`:
   - tipo (varchar)                 -- Type of store (e.g., Roupas, Jogos, Tênis)
   - numero (numeric)              -- Store number, used to link to loja_{{numero}} tables
 
-TABLE `posicao`:
-  - numero (integer)              -- Store number (foreign key to 'lojas')
-  - x (integer)                   -- X coordinate on the map
-  - y (integer)                   -- Y coordinate on the map
-  - z (integer)                   -- Z coordinate on the map
-
 TABLE `loja_100`:                 -- Clothing store
   - id SERIAL PRIMARY KEY
   - produto VARCHAR(50)           -- Product name (e.g., Camiseta)
@@ -334,12 +328,12 @@ def multi_table_search(buyer_request: str, agent_id: str, store_number: int) -> 
 
         lines.append(f"Loja encontrada: ID={store_id}, tipo={store_tipo}, numero={store_number}")
 
-        coords = get_store_coordinates(store_number, agent_id)
-        if coords:
-            x, y, z = coords
-            lines.append(f"Posição da loja: x={x}, y={y}, z={z}")
-        else:
-            lines.append("Posição da loja não cadastrada")
+        # coords = get_store_coordinates(store_number, agent_id)
+        # if coords:
+        #     x, y, z = coords
+        #     lines.append(f"Posição da loja: x={x}, y={y}, z={z}")
+        # else:
+        #     lines.append("Posição da loja não cadastrada")
 
         items = get_matching_items(buyer_request, store_number, agent_id)
         if items:
