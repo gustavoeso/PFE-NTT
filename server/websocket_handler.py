@@ -13,6 +13,7 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
     try:
         while True:
             data = await websocket.receive_text()
+            print(">> Conteúdo recebido:", repr(data))
             data_json = json.loads(data)
             action = data_json.get("action")
             prompt = data_json.get("prompt")

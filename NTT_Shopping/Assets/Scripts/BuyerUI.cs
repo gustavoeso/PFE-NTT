@@ -8,15 +8,30 @@ using System.Threading.Tasks; // Se estiver usando TextMesh Pro
 
 public class BuyerUI : MonoBehaviour
 {
+    public GameObject BuyerUIObject;
     public TMP_InputField itemDesejadoInput;
     public TMP_InputField precoMaximoInput;
     public Button confirmarButton;
     public Client client;
-    public GameObject inputPanel; 
 
     public void OnClickWrapper()
     {
         _ = OnConfirmButtonClicked(); // Ignora o Task, como o Unity espera void
+    }
+
+    public void Start()
+    {
+        BuyerUIObject.SetActive(false);
+    }
+
+    public void InitializeUI()
+    {
+        BuyerUIObject.SetActive(true);
+    }
+
+    public void CloseUI()
+    {
+        BuyerUIObject.SetActive(false);
     }
 
     public async Task OnConfirmButtonClicked()
@@ -26,12 +41,6 @@ public class BuyerUI : MonoBehaviour
 
         string[] produtos = rawProdutos.Split(',');
         string[] precosStr = rawPrecos.Split(',');
-
-        if (produtos.Length != precosStr.Length)
-        {
-            Debug.LogError("Número de produtos e preços não coincidem!");
-            return;
-        }
 
         List<string> requestedItems = new List<string>();
         List<float> maxPrices = new List<float>();
@@ -61,18 +70,20 @@ public class BuyerUI : MonoBehaviour
             return;
         }
 
-        Client[] clients = Object.FindObjectsByType<Client>(FindObjectsSortMode.None);
-        if (clients.Length != 1 || clients[0] == null)
+        if (requestedItems.Count != maxPrices.Count)
         {
-            Debug.LogError("Erro ao localizar instância única de Client.");
+            Debug.LogError("Número de produtos e preços não coincidem após validação!");
             return;
         }
 
-        await clients[0].SetDesiredPurchase(requestedItems, maxPrices);
-        clients[0].BeginMovement();
+        Client client = Object.FindFirstObjectByType<Client>();
+
+        await client.SetDesiredPurchase(requestedItems, maxPrices);
+        client.StartSimulation();
 
         Debug.Log($"(BuyerUI) Produtos=[{string.Join(", ", requestedItems)}], Preços Máximos=[{string.Join(", ", maxPrices)}]");
-        inputPanel.SetActive(false);
+        
+        CloseUI();
     }
 
     
