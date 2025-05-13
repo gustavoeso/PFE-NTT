@@ -83,12 +83,11 @@ public class Client : Agent
             hasAskedGuide = true;
 
             string prompt = "Estou procurando o produto: " + requestedItem;
-
+            Debug.Log("Test Guide");
             Dialogue.Instance.InitializeDialogue("client", "guide");
             await Dialogue.Instance.StartDialogue(prompt, true);
             await TTSManager.Instance.SpeakAsync(prompt, TTSManager.Instance.voiceClient);
 
-            // (1) Envia via WebSocket com ação "guide_request"
             string guideJson = await websocketClient.SendMessageToGuide(prompt);
 
             // (2) Extrai a resposta
@@ -136,12 +135,18 @@ public class Client : Agent
             await storeConversationFinishedTCS.Task;
             if (requestedItems[currentItemIndex + 1] != null)
             {
+                Debug.Log("Going to next item");
                 currentItemIndex++;
                 requestedItem = requestedItems[currentItemIndex];
                 GameObject guide = GameObject.FindGameObjectWithTag("Guide");
                 if (guide != null && navMeshAgent != null)
                 {
+                    navMeshAgent.isStopped = false;
+                    navMeshAgent.speed = speed;
                     navMeshAgent.SetDestination(guide.transform.position);
+                    storeConversationInProgress = false;
+                    canCollide = false;
+                    hasAskedGuide = false;
                 }
             }
             else
