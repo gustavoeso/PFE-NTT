@@ -5,7 +5,7 @@ from sqlalchemy import text
 from server.db.engine import engine
 from server.config import OPENAI_API_KEY, OPENAI_MODEL_NAME
 from langchain_openai import ChatOpenAI
-from server.utils.memory import agent_cache
+from server.utils.memory import agent_cache, productIndex
 from server.llm.prompts import prompt_loja_prompt, prompt_loja_fallback_chain
 from langchain.chains import LLMChain
 
@@ -327,13 +327,6 @@ def multi_table_search(buyer_request: str, agent_id: str, store_number: int) -> 
         store_tipo = agent_cache[agent_id].get("store_tipo")
 
         lines.append(f"Loja encontrada: ID={store_id}, tipo={store_tipo}, numero={store_number}")
-
-        # coords = get_store_coordinates(store_number, agent_id)
-        # if coords:
-        #     x, y, z = coords
-        #     lines.append(f"Posição da loja: x={x}, y={y}, z={z}")
-        # else:
-        #     lines.append("Posição da loja não cadastrada")
 
         items = get_matching_items(buyer_request, store_number, agent_id)
         if items:

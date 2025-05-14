@@ -8,3 +8,5 @@ agent_cache = defaultdict(dict)
 
 # Histórico de mensagens por agente (lista de dicts: {"role": "buyer"/"seller", "text": "..."})
 agent_memory = defaultdict(list)
+
+productIndex = {}

@@ -78,7 +78,7 @@ public class NativeWSClient : MonoBehaviour
             await websocket.SendText(json);
             Debug.Log("[Cliente] >> " + json);
 
-            var timeout = Task.Delay(40000);
+            var timeout = Task.Delay(60000);
             var completed = await Task.WhenAny(tcs.Task, timeout);
 
             if (completed == timeout)
@@ -137,6 +137,12 @@ public class NativeWSClient : MonoBehaviour
     {
         string json = $"\"conversa\": \"{prompt}\"";
         return await SendTextWithAnswer("get_summary", json);
+    }
+
+    public async Task nextProduct()
+    {
+        string json = $"{{\"action\": \"nextProduct\"}}";
+        await websocket.SendText(json);
     }
 
     [Serializable]

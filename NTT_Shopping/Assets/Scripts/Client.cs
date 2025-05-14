@@ -94,15 +94,18 @@ public class Client : MonoBehaviour
         
         if (dialoguePartner == "Guide")
         {
+            string textToShow = "Olá, você sabe onde eu poderia encontrar o produto " + requestedItems[currentItemIndex] + "?";
             tempString = "Estou procurando o produto: " + requestedItems[currentItemIndex];
             Dialogue.Instance.InitializeDialogue("client", "guide");
-            await Dialogue.Instance.StartDialogue(tempString, true);
+            await Dialogue.Instance.StartDialogue(textToShow, true);
             await TTSManager.Instance.SpeakAsync(tempString, TTSManager.Instance.voiceClient);
             tempString = await websocketClient.SendMessageToGuide(tempString);
 
             AgentResponse response = JsonUtility.FromJson<AgentResponse>(tempString);
             tempString = response.answer;
-            await Dialogue.Instance.StartDialogue(tempString, false);
+            string storeType = ExtractStoreType(tempString);
+            textToShow = $"Olá, você pode encontrar o produto {requestedItems[currentItemIndex]} na loja de {storeType}";
+            await Dialogue.Instance.StartDialogue(textToShow, false);
             await TTSManager.Instance.SpeakAsync(tempString, TTSManager.Instance.voiceGuide);
             Dialogue.Instance.CloseDialogue();
 
@@ -119,6 +122,7 @@ public class Client : MonoBehaviour
             if (currentItemIndex < requestedItems.Count)
             {
                 targetType = "Guide";
+                await websocketClient.nextProduct();
                 findGuide();
                 BeginMovement();
             }
@@ -244,6 +248,19 @@ public class Client : MonoBehaviour
 
         return Regex.Replace(text, @"[^\d]", "");
     }
+
+    private string ExtractStoreType(string text)
+    {
+        Debug.Log("Extracting Store Type From: " + text);
+        var match = Regex.Match(text, @"tipo\s*=\s*'([^']+)'");
+        if (match.Success)
+        {
+            return match.Groups[1].Value;
+        }
+
+        return "Tipo não encontrado";
+    }
+
 
     public async Task SetDesiredPurchase(List<string> desiredItems, List<float> prices)
     {
