@@ -8,6 +8,8 @@ from langchain_openai import ChatOpenAI
 from server.utils.memory import agent_cache, productIndex
 from server.llm.prompts import prompt_loja_prompt, prompt_loja_fallback_chain
 from langchain.chains import LLMChain
+import time
+import json
 
 # Setup
 
@@ -24,7 +26,7 @@ TABLE `lojas`:
   - numero (numeric)              -- Store number, used to link to loja_{{numero}} tables
 
 TABLE `loja_100`:                 -- Clothing store
-  - id SERIAL PRIMARY KEY
+  - id SERIAL PRIMARY KEY         -- Product ID
   - produto VARCHAR(50)           -- Product name (e.g., Camiseta)
   - tipo VARCHAR(50)              -- Variation (e.g., Preta, Branca)
   - qtd INT                       -- Quantity in stock
@@ -34,7 +36,7 @@ TABLE `loja_100`:                 -- Clothing store
   - estampa VARCHAR(3)            -- "Sim" or "Não" for printed design
 
 TABLE `loja_200`:                 -- Video games store
-  - id SERIAL PRIMARY KEY
+  - id SERIAL PRIMARY KEY         -- Product ID
   - produto VARCHAR(100)          -- Game title (e.g., FIFA 23)
   - tipo VARCHAR(50)              -- Genre (e.g., FPS, RPG)
   - qtd INT                       -- Quantity in stock
@@ -42,7 +44,7 @@ TABLE `loja_200`:                 -- Video games store
   - console VARCHAR(50)           -- Console name (e.g., Xbox)
 
 TABLE `loja_300`:                 -- Skate shop
-  - id SERIAL PRIMARY KEY
+  - id SERIAL PRIMARY KEY         -- Product ID
   - produto VARCHAR(50)           -- Product name (e.g., Skate, Capacete)
   - marca VARCHAR(50)             -- Brand (e.g., Vans, Thrasher)
   - tipo VARCHAR(50)              -- Product type (e.g., Elétrico, Proteção)
@@ -51,7 +53,7 @@ TABLE `loja_300`:                 -- Skate shop
   - preco DECIMAL(10,2)           -- Price
 
 TABLE `loja_400`:                 -- Shoe store
-  - id SERIAL PRIMARY KEY
+  - id SERIAL PRIMARY KEY         -- Product ID
   - produto VARCHAR(50)           -- Product name (typically "Tênis")
   - marca VARCHAR(50)             -- Brand (e.g., Nike, Adidas, Jordan)
   - tipo VARCHAR(50)              -- Model (e.g., Air Max)
@@ -60,11 +62,30 @@ TABLE `loja_400`:                 -- Shoe store
   - preco DECIMAL(10,2)           -- Price
 
 TABLE `loja_500`:                 -- Fast food restaurant
-  - id SERIAL PRIMARY KEY
+  - id SERIAL PRIMARY KEY         -- Product ID
   - produto VARCHAR(50)           -- Food item (e.g., Cheeseburger)
   - tipo VARCHAR(50)              -- Variation (e.g., Grande, 6 unidades)
   - qtd INT                       -- Quantity in stock
   - preco DECIMAL(10,2)           -- Price
+
+TABLE `loja_600`:                 -- Bookstore 
+  - id (serial)                   -- Product ID
+  - produto (text)                -- Book title
+  - autor (text)                  -- Author of the book
+  - genero (text)                 -- Genre of the book
+  - preco (numeric)               -- Price in BRL
+  - idioma (text)                 -- Language
+  - qtd (int)                     -- Quantity in stock
+
+TABLE `loja_700`:                 -- Electronics store
+  - id (serial)                   -- Product ID
+  - produto (text)                -- Product category (e.g., Smartphone, Monitor)
+  - tipo (text)                   -- Specific model (e.g., Galaxy S24, iPhone 15)
+  - marca (text)                  -- Brand name
+  - preco (numeric)               -- Price in BRL
+  - garantia (text)               -- Warranty duration
+  - qtd (int)                     -- Quantity in stock
+  
 
 IMPORTANT:
  - Do NOT reference columns that do not exist.
@@ -82,6 +103,16 @@ User Question: {input}
 SQLQuery:
 """
 
+def medir_tempo(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.perf_counter()
+        resultado = func(*args, **kwargs)
+        elapsed_time = time.perf_counter() - start_time
+        print(f"[{func.__name__}] Tempo de execução: {elapsed_time:.3f} segundos")
+        return resultado
+    return wrapper
+
+
 
 sql_prompt = PromptTemplate(
     input_variables=["input"],
@@ -95,6 +126,7 @@ sql_chain = SQLDatabaseChain.from_llm(
     verbose=True  # shows prompt, SQL, and results in terminal
 )
 
+@medir_tempo
 def search_database(nl_query: str):
     """
     Use the sql_chain to turn natural language into SQL, then execute it.
@@ -160,7 +192,7 @@ prompt_generator_chain = LLMChain(
     prompt=prompt_generator_prompt,
     verbose=False
 )
-
+@medir_tempo
 def get_store_number(buyer_request: str, agent_id: str) -> int:
     """
     1. Check if 'store_number' is cached for this agent_id.
@@ -214,36 +246,67 @@ def get_store_coordinates(store_number: int, agent_id: str):
     agent_cache[agent_id]["store_position"] = coords
     return coords
 
+# Prompt para decompor pedido em campos da loja
+atributo_parser_prompt = PromptTemplate(
+    input_variables=["pedido", "campos"],
+    template="""
+Você é um assistente inteligente que separa um pedido de compra em campos da tabela.
+
+Pedido: "{pedido}"
+
+Campos da tabela disponíveis: {campos}
+
+Responda com um JSON mapeando os campos relevantes. Ignore os campos que não aparecem no pedido.
+Exemplo: 
+Entrada: "camiseta branca algodão"
+Saída: {{"produto": "camiseta", "tipo": "branca", "material": "algodão"}}
+
+Agora responda com o JSON para o pedido:
+"""
+)
+
+atributo_parser_chain = LLMChain(llm=llm, prompt=atributo_parser_prompt)
+
+@medir_tempo
 def generate_sql_for_loja(buyer_request: str, store_number: int, store_tipo: str) -> str:
     store_schema = {
         "Roupas": ["produto", "tipo", "qtd", "preco", "tamanho", "material", "estampa"],
         "Jogos": ["produto", "tipo", "qtd", "preco", "console"],
         "Skate": ["produto", "marca", "tipo", "cor", "qtd", "preco"],
         "Tênis": ["produto", "marca", "tipo", "cor", "qtd", "preco"],
-        "WcDonalds": ["produto", "tipo", "qtd", "preco"]
+        "WcDonalds": ["produto", "tipo", "qtd", "preco"],
+        "Livros": ["produto", "autor", "genero", "preco", "idioma", "qtd"],
+        "Eletronicos": ["produto", "tipo", "marca", "preco", "garantia", "qtd"]
     }
 
     columns = store_schema.get(store_tipo, ["produto", "tipo", "qtd", "preco"])
     col_string = ", ".join(columns)
-
     base_query = f"SELECT {col_string} FROM loja_{store_number} WHERE qtd > 0"
 
-    # Geração de filtros com base no pedido
+    # 🧠 Tentar decompor o pedido nos campos certos usando LLM
+    atributos = atributo_parser_chain.run({
+        "pedido": buyer_request,
+        "campos": ", ".join(columns)
+    })
+
+    try:
+        atributos_dict = json.loads(atributos)
+    except Exception as e:
+        print(f"[generate_sql_for_loja] Falha ao converter JSON: {e}\nEntrada: {atributos}")
+        atributos_dict = {}
+
     filter_clauses = []
-    if "produto" in columns:
-        filter_clauses.append(f"produto ILIKE '%{buyer_request}%'")
-    if "tipo" in columns:
-        filter_clauses.append(f"tipo ILIKE '%{buyer_request}%'")
-    if "marca" in columns:
-        filter_clauses.append(f"marca ILIKE '%{buyer_request}%'")
+    for campo, valor in atributos_dict.items():
+        if campo in columns:
+            filter_clauses.append(f"{campo} ILIKE '%{valor}%'")
 
     if filter_clauses:
-        filters = " OR ".join(filter_clauses)
+        filters = " AND ".join(filter_clauses)
         base_query += f" AND ({filters})"
 
     return base_query
 
-
+@medir_tempo
 def get_matching_items(buyer_request: str, store_number: int, agent_id: str):
     if "matching_items" in agent_cache[agent_id]:
         return agent_cache[agent_id]["matching_items"]
@@ -319,7 +382,7 @@ def get_matching_items(buyer_request: str, store_number: int, agent_id: str):
     agent_cache[agent_id]["matching_items"] = fallback_matches
     return fallback_matches
 
-
+@medir_tempo
 def multi_table_search(buyer_request: str, agent_id: str, store_number: int) -> str:
     lines = []
     try:
