@@ -13,7 +13,7 @@ public class Dialogue : MonoBehaviour
     public TextMeshProUGUI textDisplay;
     public TextMeshProUGUI leftName;
     public TextMeshProUGUI rightName;
-    public float typingSpeed = 0.05f;
+    public float typingSpeed = 0.03f;
 
     [Header("Posições para personagens 3D")]
     public Transform leftCharacterSlot;
@@ -64,17 +64,20 @@ public class Dialogue : MonoBehaviour
         leftName.text = leftCharID;
 
         gameObject.SetActive(true);
+        Debug.Log("Painel Ativo");
     }
 
     public Task StartDialogue(string sentence, bool isLeftCharacterTalking)
     {
+        dialogueFinishedTCS = new TaskCompletionSource<bool>();
+
         textDisplay.text = "";
         textDisplay.pageToDisplay = 1;
 
         UpdateCharacterVisual(isLeftCharacterTalking);
-
         StartCoroutine(TypeLine(sentence));
-        return Task.CompletedTask;
+
+        return dialogueFinishedTCS.Task;
     }
 
 
@@ -135,6 +138,8 @@ public class Dialogue : MonoBehaviour
 
             yield return new WaitForSeconds(typingSpeed);
         }
+        
+        yield return new WaitForSeconds(typingSpeed * 2);
 
         dialogueFinishedTCS?.TrySetResult(true);
     }

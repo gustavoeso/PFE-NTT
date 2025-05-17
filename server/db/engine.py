@@ -3,4 +3,4 @@ from sqlalchemy import create_engine
 
 from server.config import DB_URI
 
-engine = create_engine(DB_URI)
+engine = create_engine(DB_URI, pool_pre_ping=True)

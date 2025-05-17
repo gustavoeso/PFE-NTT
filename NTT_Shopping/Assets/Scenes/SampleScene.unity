@@ -9705,6 +9705,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 737861893}
     m_Modifications:
+    - target: {fileID: 1405870182766973217, guid: 8871f05d22c6360449a4f1d305314a0b, type: 3}
+      propertyPath: m_IsKinematic
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2632827245528582471, guid: 8871f05d22c6360449a4f1d305314a0b, type: 3}
+      propertyPath: maxStoreTurns
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 2632827245528582471, guid: 8871f05d22c6360449a4f1d305314a0b, type: 3}
       propertyPath: startMovement
       value: 1
@@ -10849,7 +10857,7 @@ MonoBehaviour:
   textDisplay: {fileID: 1180516757}
   leftName: {fileID: 1057449430}
   rightName: {fileID: 1376268787}
-  typingSpeed: 0.05
+  typingSpeed: 0.03
   leftCharacterSlot: {fileID: 17200118}
   rightCharacterSlot: {fileID: 515637960}
   characterMappings:
@@ -15030,11 +15038,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e6363e831af0f274e9d76a53d4689fc0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  BuyerUIObject: {fileID: 1776692074}
   itemDesejadoInput: {fileID: 548781755}
   precoMaximoInput: {fileID: 561722533}
   confirmarButton: {fileID: 317445452}
   client: {fileID: 1089161077}
-  inputPanel: {fileID: 1776692074}
 --- !u!114 &1776692077
 MonoBehaviour:
   m_ObjectHideFlags: 0

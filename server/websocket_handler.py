@@ -1,6 +1,6 @@
 import json
 from fastapi import WebSocket, WebSocketDisconnect
-from server.utils.memory import connections, agent_cache, agent_memory
+from server.utils.memory import connections, agent_cache, agent_memory, productIndex
 from server.llm.chains import buyer_chain, seller_chain, resumo_chain, parser
 from server.db.queries import get_store_number, get_store_coordinates, get_matching_items, multi_table_search
 
@@ -13,14 +13,18 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
     try:
         while True:
             data = await websocket.receive_text()
+            print(">> Conteúdo recebido:", repr(data))
             data_json = json.loads(data)
             action = data_json.get("action")
             prompt = data_json.get("prompt")
 
             if action == "start":
                 agent_cache[agent_id].clear()
-                agent_memory[agent_id].clear()  # já presente
+                agent_memory[agent_id].clear()  
                 await websocket.send_text(json.dumps({"message": f"Sessão iniciada para agent_id={agent_id}"}))
+
+            elif action == "nextProduct":
+                productIndex[agent_id] += 1
 
             elif action == "buyer_message":
                 request_id = data_json.get("request_id", "undefined")
@@ -30,8 +34,8 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
                 result = buyer_chain.invoke({
                     "history": history_text,
                     "seller_utterance": prompt,
-                    "desired_item": agent_cache[agent_id]["desired_items"][0],
-                    "max_price": agent_cache[agent_id]["max_prices"][0],
+                    "desired_item": agent_cache[agent_id]["desired_items"][productIndex[agent_id]],
+                    "max_price": agent_cache[agent_id]["max_prices"][productIndex[agent_id]],
                     "format_instructions": parser.get_format_instructions()
                 })
 
@@ -46,8 +50,8 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
 
             elif action == "store_request":
                 request_id = data_json.get("request_id", "undefined")
-                store_number = get_store_number(agent_cache[agent_id]["desired_items"][0], agent_id)
-                stock_info = multi_table_search(agent_cache[agent_id]["desired_items"][0], agent_id, store_number)
+                store_number = get_store_number(agent_cache[agent_id]["desired_items"][productIndex[agent_id]], agent_id)
+                stock_info = multi_table_search(agent_cache[agent_id]["desired_items"][productIndex[agent_id]], agent_id, store_number)
 
                 history_text = "\n".join(f"{m['role'].upper()}: {m['text']}" for m in agent_memory[agent_id])
 
@@ -78,21 +82,11 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
                 request_id = data_json.get("request_id", "undefined")
 
                 try:
-                    # 🆕 Pegando o item da rodada atual
-                    desired_item = agent_cache[agent_id]["desired_items"][0]
-
+                    desired_item = agent_cache[agent_id]["desired_items"][productIndex[agent_id]]
                     store_number = get_store_number(desired_item, agent_id)
                     store_id = agent_cache[agent_id].get("store_id")
                     store_tipo = agent_cache[agent_id].get("store_tipo")
-                    # coords = get_store_coordinates(store_number, agent_id)
 
-                    # if coords:
-                    #     x, y, z = coords
-                    #     answer = (
-                    #         f"Loja encontrada: id={store_id}, tipo='{store_tipo}', número={store_number}. "
-                    #         f"Localização: x={x}, y={y}, z={z}."
-                    #     )
-                    # else:
                     answer = (
                         f"Loja encontrada: id={store_id}, tipo='{store_tipo}', número={store_number}"
                         )
@@ -116,16 +110,15 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
 
             elif action == "setBuyerPreferences":
                 try:
+                    productIndex[agent_id] = 0
                     desired_items = data_json.get("desired_item", [])
                     max_prices = data_json.get("max_price", [])
 
-                    # compatibilidade: se veio string (caso antigo), coloca em lista
                     if isinstance(desired_items, str):
                         desired_items = [desired_items]
                     if isinstance(max_prices, (int, float, str)):
                         max_prices = [float(max_prices)]
 
-                    # conversão extra se veio {"list": [...]} do Unity
                     if isinstance(desired_items, dict) and "list" in desired_items:
                         desired_items = desired_items["list"]
                     if isinstance(max_prices, dict) and "list" in max_prices:

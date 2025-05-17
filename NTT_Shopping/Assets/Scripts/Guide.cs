@@ -1,21 +1,12 @@
 using UnityEngine;
 using System.Threading.Tasks;
 
-public class Guide : MonoBehaviour
+public class Guide : Agent
 {
-    private async void OnTriggerEnter(Collider other)
+    private void Start()
     {
-        if (other.CompareTag("Client"))
-        {
-            Client clientAgent = other.GetComponent<Client>();
-            if (clientAgent != null)
-            {   
-                if (clientAgent.canCollide){
-                    await clientAgent.StartConversation("Guide");
-                }
-            }
-        }
-    }
+        agentType = "Guide";
+    } 
 }
 
 

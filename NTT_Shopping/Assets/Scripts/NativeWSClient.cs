@@ -40,7 +40,6 @@ public class NativeWSClient : MonoBehaviour
             string message = Encoding.UTF8.GetString(bytes);
             Debug.Log("[Servidor] >> " + message);
 
-            // Extrair request_id se houver
             if (message.Contains("\"request_id\""))
             {
                 var response = JsonUtility.FromJson<WSResponse>(message);
@@ -76,14 +75,11 @@ public class NativeWSClient : MonoBehaviour
             var tcs = new TaskCompletionSource<string>();
             pendingResponses[requestId] = tcs;
 
-            Debug.Log("[Cliente] << " + json);
-            await websocket.SendText(json);  // <- possível ponto de falha
+            await websocket.SendText(json);
             Debug.Log("[Cliente] >> " + json);
 
-            var timeout = Task.Delay(40000);
-            Debug.Log("Esperando Task.WhenAny...");
+            var timeout = Task.Delay(60000);
             var completed = await Task.WhenAny(tcs.Task, timeout);
-            Debug.Log("Task.WhenAny retornou.");
 
             if (completed == timeout)
             {
@@ -96,7 +92,7 @@ public class NativeWSClient : MonoBehaviour
         catch (Exception ex)
         {
             Debug.LogError($"[SendTextWithAnswer] EXCEÇÃO: {ex.Message}\n{ex.StackTrace}");
-            throw; // Propaga para ser visível em StartConversation se necessário
+            throw;
         }
     }
 
@@ -141,6 +137,12 @@ public class NativeWSClient : MonoBehaviour
     {
         string json = $"\"conversa\": \"{prompt}\"";
         return await SendTextWithAnswer("get_summary", json);
+    }
+
+    public async Task nextProduct()
+    {
+        string json = $"{{\"action\": \"nextProduct\"}}";
+        await websocket.SendText(json);
     }
 
     [Serializable]
