@@ -25,6 +25,10 @@ public class Dialogue : MonoBehaviour
     private GameObject leftCharacterInstance;
     private GameObject rightCharacterInstance;
 
+    [Header("Som de digitação")]
+    public AudioSource typingSound;
+
+
 
     private TaskCompletionSource<bool> dialogueFinishedTCS;
 
@@ -126,6 +130,8 @@ public class Dialogue : MonoBehaviour
 
     private IEnumerator TypeLine(string sentence)
     {
+        int charCount = 0;
+
         foreach (char letter in sentence.ToCharArray())
         {
             textDisplay.text += letter;
@@ -136,14 +142,20 @@ public class Dialogue : MonoBehaviour
                 textDisplay.pageToDisplay = textDisplay.textInfo.pageCount;
             }
 
+            // Toca o som de digitação a cada 2 caracteres, por exemplo
+            charCount++;
+            if (charCount % 2 == 0 && typingSound != null)
+            {
+                typingSound.Play();
+            }
+
             yield return new WaitForSeconds(typingSpeed);
         }
-        
+
         yield return new WaitForSeconds(typingSpeed * 2);
 
         dialogueFinishedTCS?.TrySetResult(true);
     }
-
 
     public void CloseDialogue()
     {
