@@ -1,0 +1,22 @@
+Modelo: deepseek_v3 (deepseek/deepseek-chat-v3-0324)
+Temperatura: 0.3
+Total de turns: 7
+Tempo total da conversa: 27.93 segundos
+Tempo médio por turn: 5.12 segundos
+
+--- Conversa ---
+Buyer: Oi, estou procurando uma camiseta branca.
+Seller:   
+
+Ótimo! Temos algumas opções de camisetas brancas aqui na loja. Temos modelos básicos em algodão a partir de R$49,90 e também algumas opções mais premium com estampas discretas por volta de R$89,90. Você prefere algo mais simples ou gostaria de ver as opções com detalhes?
+Buyer:   
+
+Qual é a diferença de qualidade entre as camisetas básicas e as premium?
+Seller: As camisetas básicas são feitas em algodão 100% penteado, ótimas para o dia a dia, com um caimento mais simples e durabilidade boa. Já as premium têm um tecido de algodão com fio mais grosso e costuras reforçadas, além de detalhes como pespontos e etiquetas internas mais discretas. A diferença principal está no acabamento e no conforto - as premium têm um toque mais macio e duram mais lavagens sem deformar. Quer que eu mostre as duas opções para você sentir a diferença?
+Buyer: Posso experimentar a camiseta premium para ver o caimento?
+Seller: Claro, sem problemas! Vou pegar a camiseta premium para você experimentar. Qual o seu tamanho? Temos do P ao GG. 
+
+Enquanto isso, posso te contar que essa camiseta premium está com uma promoção especial hoje: saindo por R$79,90 (era R$89,90). Ela tem um caimento mais estruturado e o tecido é realmente muito macio. 
+
+Quer que eu mostre também algumas opções de cores além da branca? Temos em off-white e marfim que combinam muito bem com tudo.
+Buyer: Qual é a composição exata do tecido da camiseta premium? (algodão com elastano, por exemplo)

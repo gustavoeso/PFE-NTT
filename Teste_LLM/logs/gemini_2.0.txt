@@ -1,0 +1,26 @@
+Modelo: gemini_2.0 (google/gemini-2.0-flash-001)
+Temperatura: 0.3
+Total de turns: 7
+Tempo total da conversa: 9.94 segundos
+Tempo médio por turn: 1.70 segundos
+
+--- Conversa ---
+Buyer: Oi, estou procurando uma camiseta branca.
+Seller: Olá! Ótima escolha, camiseta branca é um clássico! Temos vários modelos aqui na loja. 
+
+Temos camisetas 100% algodão, super confortáveis para o dia a dia, por R$49,90. Também temos algumas opções em algodão egípcio, que são mais macias e duráveis, por R$79,90. E para quem busca algo mais moderno, temos camisetas com um corte mais ajustado ao corpo, em algodão com elastano, por R$59,90.
+
+Qual tipo de tecido e modelagem você prefere? Posso te mostrar algumas opções aqui!
+
+Buyer: Qual a gramatura da 100% algodão? E ela é slim fit?
+
+Seller: A gramatura da nossa camiseta 100% algodão é de 160g/m², o que garante um bom caimento e durabilidade. E sim, temos a opção slim fit dela! Quer dar uma olhada? 😉
+
+Buyer: Essa gramatura me atende. Tem dela na cor preta também?
+
+Seller: Excelente! Sim, temos a camiseta 100% algodão slim fit na cor preta também! O preço é o mesmo, R$49,90.
+
+Você gostaria de ver a preta também ou experimentar a branca primeiro? 😊
+
+Buyer: Vou levar a preta.
+

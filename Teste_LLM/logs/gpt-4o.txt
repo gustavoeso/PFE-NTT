@@ -1,0 +1,14 @@
+Modelo: gpt-4o (gpt-4o)
+Temperatura: 0.3
+Total de turns: 7
+Tempo total da conversa: 8.94 segundos
+Tempo médio por turn: 1.61 segundos
+
+--- Conversa ---
+Buyer: Oi, estou procurando uma camiseta branca.
+Seller: Claro! Temos várias opções de camisetas brancas. Temos modelos básicos em algodão por R$ 49,90, e também algumas opções em tecidos mais sofisticados, como o linho, por R$ 89,90. Você prefere algo mais casual ou está procurando algo mais elegante?
+Buyer: Quais são os tamanhos disponíveis para essas camisetas?
+Seller: Temos as camisetas disponíveis nos tamanhos P, M, G e GG. Se precisar de ajuda para encontrar o tamanho certo, posso te ajudar a medir. Além disso, se você estiver interessado em outras cores ou estilos, temos uma variedade de opções. Posso mostrar algumas delas para você?
+Buyer: Vocês têm alguma promoção para as camisetas brancas?
+Seller: Atualmente, estamos com uma promoção especial: na compra de duas camisetas brancas, você ganha 10% de desconto no total. Além disso, se você fizer parte do nosso programa de fidelidade, pode acumular pontos para futuras compras. Se precisar de mais informações ou quiser experimentar algum modelo, estou à disposição para ajudar!
+Buyer: Vou levar duas camisetas brancas para aproveitar o desconto.
