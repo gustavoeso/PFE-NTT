@@ -6,6 +6,7 @@ public class Guide : Agent
     private void Start()
     {
         agentType = "Guide";
+        agentDescription = "Segurança do Shopping";
     } 
 }
 

@@ -115,3 +115,15 @@ WHERE qtd > 0 AND preco BETWEEN {min_price} AND {max_price}
 ORDER BY preco ASC;
 """
 )
+
+prompt_interestChecker = PromptTemplate(
+    input_variables=["storeDescription", "buyerInterest"],
+    template="""
+Você esta guiando um cliente dentro de um shopping e deve definir suas atitudes de acordo com o que ele deseja.
+Considerando como os interesses do cliente: {buyerInterest}
+O cliente apresenta interesse em: {storeDescription}?
+Responda com "yes" ou "no".
+Não utilize aspas, apenas os 2 ou 3 caracteres.
+Nenhuma outra resposta será aceita.
+"""
+)

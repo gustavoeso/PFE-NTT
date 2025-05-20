@@ -25,6 +25,7 @@ public class Client : MonoBehaviour
     // Global Vars
     public List<string> requestedItems = new List<string>();
     public List<float> maxPrices = new List<float>();
+    public string clientProfile = null;
     private int currentItemIndex = 0;
     private GameObject target = null;
     string targetType = null;
@@ -34,6 +35,7 @@ public class Client : MonoBehaviour
     private bool conversationInProgress = false;
     private bool finalOffer = false;
     protected bool isRequestInProgress = false;
+    private bool pendingInterest = false;
 
 
     protected async void Start()
@@ -83,6 +85,31 @@ public class Client : MonoBehaviour
         return;
     }
 
+    public async Task PossibleInterest(string agentDescription, Vector3 position)
+    {
+        if (!pendingInterest)
+        {
+            pendingInterest = true;
+            Debug.Log("Comprador de perfil" + clientProfile + " está interessado em: " + agentDescription + "?");
+            StopMovement();
+            string interested = await websocketClient.isBuyerInterested(clientProfile, agentDescription);
+            if (interested == "yes")
+            {
+                Debug.Log("INTERESSE CONFIRMADO");
+            }
+            else if (interested == "no")
+            {
+                Debug.Log("INTERESSE NEGADO");
+            }
+            else
+            {
+                Debug.Log("SEM INTERESSE");
+            }
+            BeginMovement();
+            pendingInterest = false;
+        }
+    }
+
     public async Task StartConversation(string dialoguePartner)
     {
         Debug.Log("Starting Conversation with: " + dialoguePartner);
@@ -91,7 +118,7 @@ public class Client : MonoBehaviour
         conversationInProgress = true;
 
         StopMovement();
-        
+
         if (dialoguePartner == "Guide")
         {
             string textToShow = "Olá, você sabe onde eu poderia encontrar o produto " + requestedItems[currentItemIndex] + "?";
@@ -262,11 +289,12 @@ public class Client : MonoBehaviour
     }
 
 
-    public async Task SetDesiredPurchase(List<string> desiredItems, List<float> prices)
+    public async Task SetDesiredPurchase(List<string> desiredItems, List<float> prices, string profile)
     {
 
         requestedItems = desiredItems;
         maxPrices = prices;
+        clientProfile = profile;
 
         await websocketClient.SetBuyerPreferences(desiredItems, prices);
     }

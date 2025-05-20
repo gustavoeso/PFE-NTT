@@ -1,5 +1,72 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &3253671886813762254
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7380163641114452976}
+  - component: {fileID: 8783832201308926505}
+  - component: {fileID: 612882343693236745}
+  m_Layer: 0
+  m_Name: TriggerGuide
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7380163641114452976
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3253671886813762254}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2375129121446716271}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8783832201308926505
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3253671886813762254}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15a49bc599f9b9d44a36714dc2910c55, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  triggerType: 0
+--- !u!135 &612882343693236745
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3253671886813762254}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 2
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1001 &2375129121446590537
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -10,7 +77,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 100166, guid: fdfb5e1c4a1b339489c0eddebb1ab872, type: 3}
       propertyPath: m_Name
-      value: TT_demo_police
+      value: Guide
       objectReference: {fileID: 0}
     - target: {fileID: 100166, guid: fdfb5e1c4a1b339489c0eddebb1ab872, type: 3}
       propertyPath: m_TagString
@@ -59,11 +126,11 @@ PrefabInstance:
     m_RemovedComponents:
     - {fileID: 9500000, guid: fdfb5e1c4a1b339489c0eddebb1ab872, type: 3}
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 100166, guid: fdfb5e1c4a1b339489c0eddebb1ab872, type: 3}
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 400166, guid: fdfb5e1c4a1b339489c0eddebb1ab872, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1359378386283072161}
+      addedObject: {fileID: 7380163641114452976}
+    m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 100166, guid: fdfb5e1c4a1b339489c0eddebb1ab872, type: 3}
       insertIndex: -1
       addedObject: {fileID: 8322390779163063509}
@@ -73,27 +140,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 100166, guid: fdfb5e1c4a1b339489c0eddebb1ab872, type: 3}
   m_PrefabInstance: {fileID: 2375129121446590537}
   m_PrefabAsset: {fileID: 0}
---- !u!135 &1359378386283072161
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2375129121446690575}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Radius: 2
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &8322390779163063509
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -106,3 +152,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 211a2dff8c3f3df41b21bf4a4679556b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  agentType: 
+--- !u!4 &2375129121446716271 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 400166, guid: fdfb5e1c4a1b339489c0eddebb1ab872, type: 3}
+  m_PrefabInstance: {fileID: 2375129121446590537}
+  m_PrefabAsset: {fileID: 0}

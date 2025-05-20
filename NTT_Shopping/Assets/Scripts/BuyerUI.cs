@@ -11,6 +11,7 @@ public class BuyerUI : MonoBehaviour
     public GameObject BuyerUIObject;
     public TMP_InputField itemDesejadoInput;
     public TMP_InputField precoMaximoInput;
+    public TMP_InputField profileInput;
     public Button confirmarButton;
     public Client client;
 
@@ -78,7 +79,7 @@ public class BuyerUI : MonoBehaviour
 
         Client client = Object.FindFirstObjectByType<Client>();
 
-        await client.SetDesiredPurchase(requestedItems, maxPrices);
+        await client.SetDesiredPurchase(requestedItems, maxPrices, profileInput.text);
         client.StartSimulation();
 
         Debug.Log($"(BuyerUI) Produtos=[{string.Join(", ", requestedItems)}], Preços Máximos=[{string.Join(", ", maxPrices)}]");

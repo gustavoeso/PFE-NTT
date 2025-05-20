@@ -1,7 +1,7 @@
 import json
 from fastapi import WebSocket, WebSocketDisconnect
 from server.utils.memory import connections, agent_cache, agent_memory, productIndex
-from server.llm.chains import buyer_chain, seller_chain, resumo_chain, parser
+from server.llm.chains import buyer_chain, seller_chain, resumo_chain, parser, interestChecker_chain
 from server.db.queries import get_store_number, get_store_coordinates, get_matching_items, multi_table_search
 
 async def websocket_endpoint(websocket: WebSocket, agent_id: str):
@@ -25,6 +25,19 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
 
             elif action == "nextProduct":
                 productIndex[agent_id] += 1
+
+            elif action == "buyer_interested":
+                request_id = data_json.get("request_id", "undefined")
+                storeDescription = data_json.get("storeDescription")
+                result = interestChecker_chain.invoke({
+                    "storeDescription": storeDescription,
+                    "buyerInterest": prompt,
+                    "format_instructions": parser.get_format_instructions()
+                })
+
+                response_data = result.dict()
+                response_data["request_id"] = request_id
+                await websocket.send_text(json.dumps(response_data))
 
             elif action == "buyer_message":
                 request_id = data_json.get("request_id", "undefined")
