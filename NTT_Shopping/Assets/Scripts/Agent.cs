@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Threading.Tasks;
+using UnityEditor.UI;
 
 public class Agent : MonoBehaviour
 {
@@ -17,7 +18,7 @@ public class Agent : MonoBehaviour
         }
         else if (triggerType == TriggerRelay.TriggerType.Big)
         {
-            await clientAgent.PossibleInterest(agentDescription, other.transform.position);
+            await clientAgent.PossibleInterest(agentDescription, transform.position);
         }
         else
         {

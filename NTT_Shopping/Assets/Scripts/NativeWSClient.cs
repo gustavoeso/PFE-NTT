@@ -103,9 +103,9 @@ public class NativeWSClient : MonoBehaviour
         await websocket.SendText(json);
     }
 
-    public async Task SetBuyerPreferences(List<string> desired_items, List<float> prices)
+    public async Task SetBuyerPreferences(List<string> desired_items, List<float> prices, string interests)
     {
-        string json = $"{{\"action\": \"setBuyerPreferences\", \"desired_item\": {JsonUtility.ToJson(new Wrapper<string> { list = desired_items })}, \"max_price\": {JsonUtility.ToJson(new Wrapper<float> { list = prices })}}}";
+        string json = $"{{\"action\": \"setBuyerPreferences\", \"interests\": \"{interests}\", \"desired_item\": {JsonUtility.ToJson(new Wrapper<string> { list = desired_items })}, \"max_price\": {JsonUtility.ToJson(new Wrapper<float> { list = prices })}}}";
         await websocket.SendText(json);
     }
 
@@ -147,7 +147,7 @@ public class NativeWSClient : MonoBehaviour
 
     public async Task<string> isBuyerInterested(string prompt, string storeDescription)
     {
-        string json = $"\"buyer_interest\": \"{prompt}\", \"store_description\": \"{storeDescription}\"";
+        string json = $"\"prompt\": \"{prompt}\", \"store_description\": \"{storeDescription}\"";
         return await SendTextWithAnswer("buyer_interested", json);
     }
 

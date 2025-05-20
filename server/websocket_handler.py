@@ -28,10 +28,9 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
 
             elif action == "buyer_interested":
                 request_id = data_json.get("request_id", "undefined")
-                storeDescription = data_json.get("storeDescription")
                 result = interestChecker_chain.invoke({
-                    "storeDescription": storeDescription,
-                    "buyerInterest": prompt,
+                    "storeDescription": prompt,
+                    "buyerInterest": agent_cache[agent_id]["interests"],
                     "format_instructions": parser.get_format_instructions()
                 })
 
@@ -102,7 +101,7 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
 
                     answer = (
                         f"Loja encontrada: id={store_id}, tipo='{store_tipo}', número={store_number}"
-                        )
+                    )
 
                     print(f"[INFO] Enviando resposta para o cliente: {answer}")
                     agent_memory[agent_id].append({"role": "guide", "text": answer})
@@ -126,6 +125,7 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
                     productIndex[agent_id] = 0
                     desired_items = data_json.get("desired_item", [])
                     max_prices = data_json.get("max_price", [])
+                    interests = data_json.get("interests")
 
                     if isinstance(desired_items, str):
                         desired_items = [desired_items]
@@ -142,6 +142,8 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
 
                     agent_cache[agent_id]["desired_items"] = desired_items
                     agent_cache[agent_id]["max_prices"] = max_prices
+                    agent_cache[agent_id]["interests"] = interests
+                    print(agent_cache[agent_id]["interests"])
 
                     await websocket.send_text(json.dumps({
                         "response": f"Preferências salvas: itens={desired_items}, preços={max_prices}"

@@ -4799,11 +4799,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 411650602}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &512522492 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 2834083620770373255, guid: 09a5be3b6d485834da0f10bb04329ab4, type: 3}
-  m_PrefabInstance: {fileID: 1587258387}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &515637959
 GameObject:
   m_ObjectHideFlags: 0
@@ -6744,11 +6739,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 411650602}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &667618159 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 2834083620770373255, guid: 09a5be3b6d485834da0f10bb04329ab4, type: 3}
-  m_PrefabInstance: {fileID: 1159081041858847509}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &677374988
 GameObject:
   m_ObjectHideFlags: 0
@@ -8013,7 +8003,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2954118383787280197, guid: 09a5be3b6d485834da0f10bb04329ab4, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 2954118383787280197, guid: 09a5be3b6d485834da0f10bb04329ab4, type: 3}
       propertyPath: m_LocalPosition.z
@@ -11934,25 +11924,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 2954118383787280197, guid: 09a5be3b6d485834da0f10bb04329ab4, type: 3}
   m_PrefabInstance: {fileID: 1587258387}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1228126532
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 512522492}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 78ac47e29cef50d4bacccd0a9a274a33, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  waypoints:
-  - {fileID: 766324879}
-  - {fileID: 66076113}
-  speed: 2
-  minWaitTime: 1
-  maxWaitTime: 3
-  chanceToReturnHome: 0.5
 --- !u!4 &1240939068 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4781197503981280, guid: b47e378cfc84c394bb601ec5791d5248, type: 3}
@@ -14691,10 +14662,7 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 2834083620770373255, guid: 09a5be3b6d485834da0f10bb04329ab4, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1228126532}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 09a5be3b6d485834da0f10bb04329ab4, type: 3}
 --- !u!1001 &1588976095
 PrefabInstance:
@@ -19658,35 +19626,13 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 2834083620770373255, guid: 09a5be3b6d485834da0f10bb04329ab4, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 4226630179389445091}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 09a5be3b6d485834da0f10bb04329ab4, type: 3}
 --- !u!4 &4226630179389445087 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2954118383787280197, guid: 09a5be3b6d485834da0f10bb04329ab4, type: 3}
   m_PrefabInstance: {fileID: 1159081041858847509}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &4226630179389445091
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 667618159}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 78ac47e29cef50d4bacccd0a9a274a33, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  waypoints:
-  - {fileID: 928349287}
-  - {fileID: 566821917}
-  speed: 2
-  minWaitTime: 1
-  maxWaitTime: 3
-  chanceToReturnHome: 0.2
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

@@ -4,8 +4,9 @@ using UnityEngine.AI;
 using UnityEngine.Networking;
 using System.Text.RegularExpressions;
 using System.Collections;
-using System.Collections.Generic; // Se precisar de listas
+using System.Collections.Generic; 
 using System.Text;
+using System.Linq;
 
 public class Client : MonoBehaviour
 {
@@ -18,7 +19,7 @@ public class Client : MonoBehaviour
     protected string myAgentId;
     protected BuyerUI buyerUI;
 
-    // Config Vars
+    // Metrics
     public float speed = 2.0f;
     public int maxStoreTurns = 3;
 
@@ -28,8 +29,10 @@ public class Client : MonoBehaviour
     public string clientProfile = null;
     private int currentItemIndex = 0;
     private GameObject target = null;
+    private Vector3 interestTargetPosition = Vector3.zero;
     string targetType = null;
     string tempString;
+    private HashSet<string> alreadyInterested = new HashSet<string>();
 
     // Flags
     private bool conversationInProgress = false;
@@ -81,32 +84,38 @@ public class Client : MonoBehaviour
     {
         findGuide();
         targetType = "Guide";
-        BeginMovement();
+        BeginMovement(true);
         return;
     }
 
     public async Task PossibleInterest(string agentDescription, Vector3 position)
     {
-        if (!pendingInterest)
+        if (!pendingInterest && !alreadyInterested.Contains(agentDescription))
         {
             pendingInterest = true;
             Debug.Log("Comprador de perfil" + clientProfile + " está interessado em: " + agentDescription + "?");
             StopMovement();
-            string interested = await websocketClient.isBuyerInterested(clientProfile, agentDescription);
+            string interested = await websocketClient.isBuyerInterested(agentDescription, clientProfile);
+            CheckResponse response = JsonUtility.FromJson<CheckResponse>(interested);
+            interested = response.content;
             if (interested == "yes")
             {
-                Debug.Log("INTERESSE CONFIRMADO");
+                Debug.Log("Interested in " + agentDescription);
+                interestTargetPosition = position;
+                BeginMovement(false);
             }
             else if (interested == "no")
             {
-                Debug.Log("INTERESSE NEGADO");
+                Debug.Log("No interest on " + agentDescription);
+                BeginMovement(true);
             }
             else
             {
-                Debug.Log("SEM INTERESSE");
+                Debug.Log("Wrong Answer from WebSocket: " + interested);
+                BeginMovement(true);
             }
-            BeginMovement();
             pendingInterest = false;
+            alreadyInterested.Add(agentDescription);
         }
     }
 
@@ -138,20 +147,25 @@ public class Client : MonoBehaviour
 
             FindStore(ExtractStoreNumber(tempString));
             targetType = "Store";
-            BeginMovement();
+            BeginMovement(true);
         }
 
         else if (dialoguePartner == "Store")
         {
             await RunStoreConversationLoop();
 
-            currentItemIndex++;
-            if (currentItemIndex < requestedItems.Count)
+            if (currentItemIndex + 1 < requestedItems.Count)
             {
+                currentItemIndex++;
                 targetType = "Guide";
                 await websocketClient.nextProduct();
                 findGuide();
-                BeginMovement();
+                BeginMovement(true);
+            }
+            else if (interestTargetPosition != Vector3.zero)
+            {
+                interestTargetPosition = Vector3.zero;
+                BeginMovement(true);
             }
             else
             {
@@ -221,7 +235,7 @@ public class Client : MonoBehaviour
     private void GoToExit()
     {
         FindExit();
-        BeginMovement();
+        BeginMovement(true);
     }
 
     private void findGuide()
@@ -230,11 +244,18 @@ public class Client : MonoBehaviour
         target = guide;
     }
 
-    public void BeginMovement()
-    {   
+    public void BeginMovement(bool originalTarget)
+    {
         Debug.Log("Begin Movement to Target: " + target.name);
         navMeshAgent.isStopped = false;
-        navMeshAgent.SetDestination(target.transform.position);
+        if (originalTarget)
+        {
+            navMeshAgent.SetDestination(target.transform.position);
+        }
+        else
+        {
+            navMeshAgent.SetDestination(interestTargetPosition);
+        }
     }
 
     public void StopMovement()
@@ -244,7 +265,7 @@ public class Client : MonoBehaviour
     }
 
     protected void FindStore(string storeID)
-    {   
+    {
         Store[] stores = Object.FindObjectsByType<Store>(FindObjectsSortMode.None);
         foreach (Store store in stores)
         {
@@ -265,7 +286,7 @@ public class Client : MonoBehaviour
     }
 
     private string ExtractStoreNumber(string text)
-    {   
+    {
         Debug.Log("Extracting Store Number From: " + text);
         var match = Regex.Match(text, @"n[uú]mero\s*=\s*(\d+)");
         if (match.Success)
@@ -296,7 +317,7 @@ public class Client : MonoBehaviour
         maxPrices = prices;
         clientProfile = profile;
 
-        await websocketClient.SetBuyerPreferences(desiredItems, prices);
+        await websocketClient.SetBuyerPreferences(desiredItems, prices, profile);
     }
 
     protected string ExtractResponse(string jsonResponse)
@@ -347,6 +368,12 @@ public class Client : MonoBehaviour
         public string request_id;
         public string answer;
         public bool final_offer;
+    }
+    
+    [System.Serializable]
+    public class CheckResponse
+    {
+        public string content;
     }
 
 }
