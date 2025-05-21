@@ -14,7 +14,10 @@ public class Agent : MonoBehaviour
 
         if (triggerType == TriggerRelay.TriggerType.Small)
         {
-            await clientAgent.StartConversation(agentType);
+            if (clientAgent.targetDescription == agentDescription)
+            {
+                await clientAgent.StartConversation(agentType);
+            }
         }
         else if (triggerType == TriggerRelay.TriggerType.Big)
         {

@@ -145,6 +145,12 @@ public class NativeWSClient : MonoBehaviour
         await websocket.SendText(json);
     }
 
+    public async Task<string> FirstMessageByInterest()
+    {
+        string json = "";
+        return await SendTextWithAnswer("firstInterestMessage", json);
+    }
+
     public async Task<string> isBuyerInterested(string prompt, string storeDescription)
     {
         string json = $"\"prompt\": \"{prompt}\", \"store_description\": \"{storeDescription}\"";

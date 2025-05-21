@@ -1,7 +1,7 @@
 import json
 from fastapi import WebSocket, WebSocketDisconnect
 from server.utils.memory import connections, agent_cache, agent_memory, productIndex
-from server.llm.chains import buyer_chain, seller_chain, resumo_chain, parser, interestChecker_chain
+from server.llm.chains import buyer_chain, seller_chain, resumo_chain, parser, interestChecker_chain, first_interest_chain
 from server.db.queries import get_store_number, get_store_coordinates, get_matching_items, multi_table_search
 
 async def websocket_endpoint(websocket: WebSocket, agent_id: str):
@@ -46,6 +46,7 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
                 result = buyer_chain.invoke({
                     "history": history_text,
                     "seller_utterance": prompt,
+                    "buyer_interests": agent_cache[agent_id]["interests"],
                     "desired_item": agent_cache[agent_id]["desired_items"][productIndex[agent_id]],
                     "max_price": agent_cache[agent_id]["max_prices"][productIndex[agent_id]],
                     "format_instructions": parser.get_format_instructions()
@@ -59,6 +60,29 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
                 response_data = result.dict()
                 response_data["request_id"] = request_id
                 await websocket.send_text(json.dumps(response_data))
+
+            elif action == "firstInterestMessage":
+                request_id = data_json.get("request_id", "undefined")
+                memory_msgs = agent_memory[agent_id]
+                history_text = "\n".join(f"{m['role'].upper()}: {m['text']}" for m in memory_msgs)
+
+                result = first_interest_chain.invoke({
+                    "history": history_text,
+                    "buyer_interests": agent_cache[agent_id]["interests"],
+                    "desired_item": agent_cache[agent_id]["desired_items"][productIndex[agent_id]],
+                    "max_price": agent_cache[agent_id]["max_prices"][productIndex[agent_id]],
+                    "format_instructions": parser.get_format_instructions()
+                })
+
+                print(f"[INFO] Enviando resposta para o cliente: {result.final_offer}")
+
+                agent_memory[agent_id].append({"role": "seller", "text": prompt})
+                agent_memory[agent_id].append({"role": "buyer", "text": result.answer})
+
+                response_data = result.dict()
+                response_data["request_id"] = request_id
+                await websocket.send_text(json.dumps(response_data))
+
 
             elif action == "store_request":
                 request_id = data_json.get("request_id", "undefined")

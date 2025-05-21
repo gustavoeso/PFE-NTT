@@ -31,6 +31,8 @@ public class Client : MonoBehaviour
     private GameObject target = null;
     private Vector3 interestTargetPosition = Vector3.zero;
     string targetType = null;
+    public string targetDescription;
+    public string originalTargetDescription;
     string tempString;
     private HashSet<string> alreadyInterested = new HashSet<string>();
 
@@ -84,6 +86,7 @@ public class Client : MonoBehaviour
     {
         findGuide();
         targetType = "Guide";
+        targetDescription = "Segurança";
         BeginMovement(true);
         return;
     }
@@ -101,6 +104,8 @@ public class Client : MonoBehaviour
             if (interested == "yes")
             {
                 Debug.Log("Interested in " + agentDescription);
+                originalTargetDescription = targetDescription;
+                targetDescription = agentDescription;
                 interestTargetPosition = position;
                 BeginMovement(false);
             }
@@ -147,6 +152,9 @@ public class Client : MonoBehaviour
 
             FindStore(ExtractStoreNumber(tempString));
             targetType = "Store";
+            Agent targetStore = target.GetComponent<Store>();
+            targetDescription = targetStore.agentDescription;
+            alreadyInterested.Add(targetDescription);
             BeginMovement(true);
         }
 
@@ -158,6 +166,7 @@ public class Client : MonoBehaviour
             {
                 currentItemIndex++;
                 targetType = "Guide";
+                targetDescription = "Segurança";
                 await websocketClient.nextProduct();
                 findGuide();
                 BeginMovement(true);
@@ -165,6 +174,7 @@ public class Client : MonoBehaviour
             else if (interestTargetPosition != Vector3.zero)
             {
                 interestTargetPosition = Vector3.zero;
+                targetDescription = originalTargetDescription;
                 BeginMovement(true);
             }
             else
@@ -179,9 +189,13 @@ public class Client : MonoBehaviour
 
     private async Task RunStoreConversationLoop()
     {
-        Dialogue.Instance.InitializeDialogue("client", "seller");
         tempString = $"Olá, quero comprar o produto {requestedItems[currentItemIndex]}";
-
+        if (interestTargetPosition != Vector3.zero)
+        {
+            tempString = await websocketClient.FirstMessageByInterest();
+            tempString = ExtractResponse(tempString);
+        }
+        Dialogue.Instance.InitializeDialogue("client", "seller");
         for (int turn = 0; turn < maxStoreTurns; turn++)
         {
             Debug.Log($"[Client] Turno {turn + 1} de {maxStoreTurns}");

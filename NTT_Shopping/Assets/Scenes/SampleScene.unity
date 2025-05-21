@@ -5170,6 +5170,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Store2
       objectReference: {fileID: 0}
+    - target: {fileID: 2834083620770373255, guid: 09a5be3b6d485834da0f10bb04329ab4, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2954118383787280197, guid: 09a5be3b6d485834da0f10bb04329ab4, type: 3}
       propertyPath: m_LocalPosition.x
       value: -17.31
@@ -10086,6 +10090,10 @@ PrefabInstance:
       propertyPath: startMovement
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 7332784645877123555, guid: 8871f05d22c6360449a4f1d305314a0b, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7775843009472213491, guid: 8871f05d22c6360449a4f1d305314a0b, type: 3}
       propertyPath: m_Name
       value: Client
@@ -10152,7 +10160,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8347718114472262700, guid: 8871f05d22c6360449a4f1d305314a0b, type: 3}
       propertyPath: m_Acceleration
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 8347718114472262700, guid: 8871f05d22c6360449a4f1d305314a0b, type: 3}
       propertyPath: m_AngularSpeed
@@ -16483,6 +16491,10 @@ PrefabInstance:
     - target: {fileID: 2375129121446716271, guid: fd3f42c96ba083643875fb5cabc792ff, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8322390779163063509, guid: fd3f42c96ba083643875fb5cabc792ff, type: 3}
+      propertyPath: agentDescription
+      value: "Seguran\xE7a"
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
