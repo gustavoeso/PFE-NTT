@@ -5,9 +5,10 @@ from sqlalchemy import text
 from server.db.engine import engine
 from server.config import OPENAI_API_KEY, OPENAI_MODEL_NAME
 from langchain_openai import ChatOpenAI
-from server.utils.memory import agent_cache, productIndex
+from server.utils.memory import agent_cache, productIndex, stores
 from server.llm.prompts import prompt_loja_prompt, prompt_loja_fallback_chain
 from langchain.chains import LLMChain
+import unicodedata
 import time
 import json
 
@@ -126,6 +127,33 @@ sql_chain = SQLDatabaseChain.from_llm(
     verbose=True  # shows prompt, SQL, and results in terminal
 )
 
+def remove_acentos(texto):
+    return ''.join(
+        c for c in unicodedata.normalize('NFKD', texto)
+        if not unicodedata.combining(c)
+    )
+
+def find_all_stores():
+    """
+    Find all stores in the database and return them as a list of tuples.
+    Each tuple contains (id, tipo, numero).
+    """
+    query = "SELECT tipo, numero, id FROM lojas"
+    try:
+        with engine.connect() as conn:
+            result_proxy = conn.execute(text(query))
+            rows = result_proxy.fetchall()
+            for row in rows:
+                store_tipo = remove_acentos(row[0])
+                store_num = row[1]
+                store_id = row[2]
+                stores[store_tipo] = [store_num, store_id]
+            print("stores:", stores)
+            return
+    except Exception as e:
+        print(f"[find_all_stores] Error: {e}")
+        return
+    
 @medir_tempo
 def search_database(nl_query: str):
     """
@@ -192,30 +220,25 @@ prompt_generator_chain = LLMChain(
     prompt=prompt_generator_prompt,
     verbose=False
 )
+
 @medir_tempo
-def get_store_number(buyer_request: str, agent_id: str) -> int:
+def get_store_tipo(buyer_request: str) -> str:
     """
     1. Check if 'store_number' is cached for this agent_id.
     2. If not cached, run prompt_generator_chain + search_database to find the store.
     3. Cache the store_number, store_id, store_tipo.
     4. Return the store_number.
     """
-    # If we already have a store_number, return it
-    if "store_number" in agent_cache[agent_id]:
-        return agent_cache[agent_id]["store_number"]
     
-    # Otherwise, generate a query for 'lojas' using the LLM
     prompt_for_lojas = prompt_generator_chain.run({"user_request": buyer_request})
-    sql_store, rows_store = search_database(prompt_for_lojas)
+    _, rows_store = search_database(prompt_for_lojas)
 
     if not rows_store:
         raise ValueError(f"Nenhuma loja encontrada para: '{buyer_request}'.")
 
     store_row = None
     for r in rows_store:
-        # row is (id, tipo, numero)
         try:
-            temp_num = int(r[2])
             store_row = r
             break
         except ValueError:
@@ -224,12 +247,9 @@ def get_store_number(buyer_request: str, agent_id: str) -> int:
     if not store_row:
         raise ValueError("Nenhum 'numero' válido encontrado na tabela 'lojas'.")
 
-    store_id, store_tipo, store_num = store_row
-    agent_cache[agent_id]["store_number"] = store_num
-    agent_cache[agent_id]["store_id"] = store_id
-    agent_cache[agent_id]["store_tipo"] = store_tipo
+    _, store_tipo, _ = store_row
 
-    return store_num
+    return remove_acentos(store_tipo)
 
 def get_store_coordinates(store_number: int, agent_id: str):
     if "store_position" in agent_cache[agent_id]:
@@ -307,11 +327,14 @@ def generate_sql_for_loja(buyer_request: str, store_number: int, store_tipo: str
     return base_query
 
 @medir_tempo
-def get_matching_items(buyer_request: str, store_number: int, agent_id: str):
+def get_matching_items(buyer_request: str, store_description: str, agent_id: str):
     if "matching_items" in agent_cache[agent_id]:
-        return agent_cache[agent_id]["matching_items"]
+        if store_description in agent_cache[agent_id]["matching_items"]:
+            return agent_cache[agent_id]["matching_items"][store_description]
+    else:
+        agent_cache[agent_id]["matching_items"] = {}
 
-    store_tipo = agent_cache[agent_id].get("store_tipo", "")
+    store_tipo = store_description
     schema = {
         "Roupas": ["produto", "tipo", "qtd", "preco", "tamanho", "material", "estampa"],
         "Jogos": ["produto", "tipo", "qtd", "preco", "console"],
@@ -319,6 +342,7 @@ def get_matching_items(buyer_request: str, store_number: int, agent_id: str):
         "Tênis": ["produto", "marca", "tipo", "cor", "qtd", "preco"],
         "WcDonalds": ["produto", "tipo", "qtd", "preco"]
     }
+    store_number = stores[store_tipo][0]
     columns = schema.get(store_tipo, ["produto", "tipo", "qtd", "preco"])
     col_string = ", ".join(columns)
 
@@ -338,7 +362,7 @@ def get_matching_items(buyer_request: str, store_number: int, agent_id: str):
         matches.append(item)
 
     if matches:
-        agent_cache[agent_id]["matching_items"] = matches
+        agent_cache[agent_id]["matching_items"][store_description] = matches
         return matches
 
     # 💡 3. Fallback inteligente por similaridade textual com o estoque
@@ -351,7 +375,7 @@ def get_matching_items(buyer_request: str, store_number: int, agent_id: str):
                 break
 
     if fallback_matches:
-        agent_cache[agent_id]["matching_items"] = fallback_matches
+        agent_cache[agent_id]["matching_items"][store_description] = fallback_matches
         return fallback_matches
 
     # 🪙 4. Fallback final com base no preço
@@ -379,19 +403,19 @@ def get_matching_items(buyer_request: str, store_number: int, agent_id: str):
         item = {col: r[i] for i, col in enumerate(columns)}
         fallback_matches.append(item)
 
-    agent_cache[agent_id]["matching_items"] = fallback_matches
+    agent_cache[agent_id]["matching_items"][store_description] = fallback_matches
     return fallback_matches
 
 @medir_tempo
-def multi_table_search(buyer_request: str, agent_id: str, store_number: int) -> str:
+def multi_table_search(buyer_request: str, agent_id: str, store_description: str) -> str:
     lines = []
     try:
-        store_id = agent_cache[agent_id].get("store_id")
-        store_tipo = agent_cache[agent_id].get("store_tipo")
+        store_number = stores[store_description][0]
+        store_id = stores[store_description][1]
 
-        lines.append(f"Loja encontrada: ID={store_id}, tipo={store_tipo}, numero={store_number}")
+        lines.append(f"Loja encontrada: ID={store_id}, tipo={store_description}, numero={store_number}")
 
-        items = get_matching_items(buyer_request, store_number, agent_id)
+        items = get_matching_items(buyer_request, store_description, agent_id)
         if items:
             lines.append("Itens Disponíveis:")
             for item in items:

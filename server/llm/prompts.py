@@ -13,15 +13,13 @@ buyer_prompt = ChatPromptTemplate.from_messages([
     - Você está buscando o: {desired_item}.
     - Seu orçamento máximo é de R$ {max_price}.
     - Além do produto desejado, também possui interesse em: {buyer_interests}.
-    - Você deve tentar comprar o produto desejado gastando o mínimo possível.
-    - Caso não possua o produto desejado ou esteja fora do orçamento, pode flexibilizar o pedido para algo similar.
-    - Você pode fazer NO MÁXIMO 3 perguntas sobre preço, quantidade, material, tamanho ou estampa para tentar atingir seu objetivo.
+    - Você deve tentar comprar o produto desejado ou algo de seu interesse gastando o mínimo possível.
+    - Caso não possua o produto desejado ou esteja fora do orçamento, pode flexibilizar o pedido para algo similar, principalmente se estiver alinhado a seus interesses.
+    - Evite fazer muitas perguntas a respeito, apenas tente chegar em um produto satisfatório considerando seu objetivo e interesses.
 
     Histórico da conversa até agora:
     {history}
 
-    Responda em JSON utilizando o seguinte formato:
-    {format_instructions}
     """),
 
     HumanMessagePromptTemplate.from_template("""
@@ -29,20 +27,31 @@ buyer_prompt = ChatPromptTemplate.from_messages([
     {seller_utterance}
 
     Agora responda como BUYER seguindo estas instruções:
+                                             
+    Responda em JSON utilizando o seguinte formato:
+    {format_instructions}
+    answer -> string : se refere a resposta efetiva do comprador no diálogo.
+    final_offer -> boolean : identifica se {seller_utterance} foi uma oferta válida do vendedor.
 
-    1. Se a resposta do vendedor já oferecer {desired_item} dentro do orçamento de R$ {max_price}, barganhe um preço menor.
-    2. Se o vendedor oferecer o {desired_item} mas por um preço MAIOR que R$ {max_price}:
-        - Pergunte se o vendedor pode fazer um desconto ou uma oferta melhor.
-    3. Se o vendedor não oferecer o {desired_item} ou o produto não atender às suas especificações, pergunte se existe outro produto que se encaixe melhor.
-
-    Sobre o campo "final_offer":
-    Esse campo serve para identificar se foi feita uma oferta por parte do vendedor.
-    - Se houver na resposta do vendedor um preço abaixo de R$ {max_price} e um produto similar ao defina {desired_item}, "final_offer": true.
-    - Caso contrário, defina "final_offer": false.
+    1. Caso o vendedor tenha oferecido algum produto semelhante ao seu objetivo ou dentro de seus interesses, por um preço abaixo de R$ {max_price}:
+        answer: Agradeça ao vendedor e diga que vai pensar na oferta.
+        final_offer: true
+                                             
+    2. Caso o vendedor tenha oferecido algum produto semelhante ao seu objetivo ou dentro de seus interesses, por um preço MAIOR que R$ {max_price}:
+        answer: Exponha seu orçamento e pergunte se o vendedor pode fazer uma oferta melhor.
+        final_offer: false
+                                             
+    3. Se o produto oferecido pelo vendedor for muito diferente das suas especificações e interesses:
+        answer: Pergunte se o vendedor tem algo mais alinhado ao seu pedido.
+        final_offer: false
 
     Observação:
     - NÃO invente preços. Baseie-se somente no que o vendedor falou.
     - NÃO se identifique como IA em nenhum momento.
+                                             
+    Exemplo de Execução:
+    Seu produto desejado é um tenis nike, mas você possui como interesse "estar com fome"
+    Caso esteja em uma loja e identifique que o vendedor tenha comida, você deve entender esse como o produto desejado.
     """)
 ])
 
@@ -109,6 +118,7 @@ seller_prompt = ChatPromptTemplate.from_messages([
     2. Não se identifique como IA.
     3. Sempre faça uma oferta para o comprador a partir do estoque.
     4. Se não houver estoque, informe que não há estoque e faça uma oferta alternativa que aparente atender o melhor possível ao pedido do cliente.
+    5. SEMPRE ofereça apenas UM produto ao cliente por vez, escolhendo aquele que melhor atende ao pedido do cliente.
     """)
 ])
 
@@ -152,9 +162,9 @@ ORDER BY preco ASC;
 prompt_interestChecker = PromptTemplate(
     input_variables=["storeDescription", "buyerInterest"],
     template="""
-Você esta guiando um cliente dentro de um shopping e deve definir suas atitudes de acordo com o que ele deseja.
+Você esta guiando um cliente dentro de um shopping e deve definir seu comportamento de acordo com os interesses do cliente.
 Considerando como os interesses do cliente: {buyerInterest}
-O cliente apresenta interesse em: {storeDescription}?
+Ao avistar uma loja de {storeDescription}, o cliente apresenta interesse?
 Responda com "yes" ou "no".
 Não utilize aspas, apenas os 2 ou 3 caracteres.
 Nenhuma outra resposta será aceita.

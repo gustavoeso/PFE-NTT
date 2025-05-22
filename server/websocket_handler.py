@@ -1,8 +1,8 @@
 import json
 from fastapi import WebSocket, WebSocketDisconnect
-from server.utils.memory import connections, agent_cache, agent_memory, productIndex
+from server.utils.memory import connections, agent_cache, agent_memory, productIndex, stores
 from server.llm.chains import buyer_chain, seller_chain, resumo_chain, parser, interestChecker_chain, first_interest_chain
-from server.db.queries import get_store_number, get_store_coordinates, get_matching_items, multi_table_search
+from server.db.queries import get_store_tipo, multi_table_search, find_all_stores
 
 async def websocket_endpoint(websocket: WebSocket, agent_id: str):
     await websocket.accept()
@@ -14,6 +14,7 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
         while True:
             data = await websocket.receive_text()
             print(">> Conteúdo recebido:", repr(data))
+            data = data.replace('\n', '\\n')
             data_json = json.loads(data)
             action = data_json.get("action")
             prompt = data_json.get("prompt")
@@ -21,6 +22,8 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
             if action == "start":
                 agent_cache[agent_id].clear()
                 agent_memory[agent_id].clear()  
+                stores.clear()
+                find_all_stores()
                 await websocket.send_text(json.dumps({"message": f"Sessão iniciada para agent_id={agent_id}"}))
 
             elif action == "nextProduct":
@@ -86,8 +89,8 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
 
             elif action == "store_request":
                 request_id = data_json.get("request_id", "undefined")
-                store_number = get_store_number(agent_cache[agent_id]["desired_items"][productIndex[agent_id]], agent_id)
-                stock_info = multi_table_search(agent_cache[agent_id]["desired_items"][productIndex[agent_id]], agent_id, store_number)
+                store_description = data_json.get("store_description", "Nenhuma descrição de loja encontrada.")
+                stock_info = multi_table_search(agent_cache[agent_id]["desired_items"][productIndex[agent_id]], agent_id, store_description)
 
                 history_text = "\n".join(f"{m['role'].upper()}: {m['text']}" for m in agent_memory[agent_id])
 
@@ -119,9 +122,9 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
 
                 try:
                     desired_item = agent_cache[agent_id]["desired_items"][productIndex[agent_id]]
-                    store_number = get_store_number(desired_item, agent_id)
-                    store_id = agent_cache[agent_id].get("store_id")
-                    store_tipo = agent_cache[agent_id].get("store_tipo")
+                    store_tipo = get_store_tipo(desired_item)
+                    store_id = stores[store_tipo][1]
+                    store_number = stores[store_tipo][0]
 
                     answer = (
                         f"Loja encontrada: id={store_id}, tipo='{store_tipo}', número={store_number}"

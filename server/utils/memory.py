@@ -10,3 +10,5 @@ agent_cache = defaultdict(dict)
 agent_memory = defaultdict(list)
 
 productIndex = {}
+
+stores = {}
