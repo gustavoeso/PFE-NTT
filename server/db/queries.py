@@ -113,8 +113,6 @@ def medir_tempo(func):
         return resultado
     return wrapper
 
-
-
 sql_prompt = PromptTemplate(
     input_variables=["input"],
     template=CUSTOM_SQL_PROMPT,
