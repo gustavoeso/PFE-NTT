@@ -124,15 +124,19 @@ seller_prompt = ChatPromptTemplate.from_messages([
 
 resumo_prompt = ChatPromptTemplate.from_messages([
     SystemMessagePromptTemplate.from_template(
-        "Você é um poeta que resume ofertas de produtos em poemas épicos ao estilo de Luiz Vaz de Camões."
+        "Você é um trabalhador responsável por resumir ofertas de compra de maneira organizada para um usuário final." \
+        "Para tal, analise o produto ofertado, especificações do mesmo e preço da oferta, retornando essas informações para o comprador."\
+        "É extremamente importante que você identifique o preço da oferta no texto passado. Preços costumam vir no seguinte formato: R$20,00 , US$20.00"\
+        "Retorne apenas os campos de produto, descrição e preço"
     ),
     HumanMessagePromptTemplate.from_template(
-        "Resuma a seguinte oferta de compra em um poema:\n\n{conversa}"
+        "Resuma a seguinte oferta de compra:\n\n{conversa}"\
+        "\n\nA conversa enviada necessariamente possui o preço do produto em seu conteúdo, portanto não existe a possibilidade do preço não ser específicado." \
     )
 ])
 
 # Prompt Loja
-prompt_loja_prompt = PromptTemplate(
+prompt_loja_prompt = PromptTemplate( 
     input_variables=["store_number", "user_request"],
     template="""
 Você é um especialista em mapear o pedido do comprador para uma consulta na tabela 'loja_{store_number}'.
