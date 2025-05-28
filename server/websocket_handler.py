@@ -73,17 +73,15 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
                     "history": history_text,
                     "buyer_interests": agent_cache[agent_id]["interests"],
                     "desired_item": agent_cache[agent_id]["desired_items"][productIndex[agent_id]],
-                    "max_price": agent_cache[agent_id]["max_prices"][productIndex[agent_id]],
-                    "format_instructions": parser.get_format_instructions()
+                    "max_price": agent_cache[agent_id]["max_prices"][productIndex[agent_id]]
                 })
 
-                print(f"[INFO] Enviando resposta para o cliente: {result.final_offer}")
-
                 agent_memory[agent_id].append({"role": "seller", "text": prompt})
-                agent_memory[agent_id].append({"role": "buyer", "text": result.answer})
+                agent_memory[agent_id].append({"role": "buyer", "text": result.content})
 
                 response_data = result.dict()
                 response_data["request_id"] = request_id
+                response_data["answer"] = result.content
                 await websocket.send_text(json.dumps(response_data))
 
 
@@ -97,15 +95,15 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
                 result = seller_chain.invoke({
                     "buyer_utterance": prompt,
                     "history": history_text,
-                    "stock_info": stock_info,
-                    "format_instructions": parser.get_format_instructions()
+                    "stock_info": stock_info
                 })
 
                 agent_memory[agent_id].append({"role": "buyer", "text": prompt})
-                agent_memory[agent_id].append({"role": "seller", "text": result.answer})
+                agent_memory[agent_id].append({"role": "seller", "text": result.content})
 
                 response_data = result.dict()
                 response_data["request_id"] = request_id
+                response_data["answer"] = result.content
                 await websocket.send_text(json.dumps(response_data))
 
             elif action == "get_summary":
@@ -113,7 +111,7 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
                 conversa_texto = data_json.get("conversa", "Nenhuma conversa encontrada.")
 
                 result = resumo_chain.invoke({"conversa": conversa_texto})
-                response_data = {"answer": result.content, "final_offer": False, "request_id": request_id}
+                response_data = {"answer": result.content, "request_id": request_id}
 
                 await websocket.send_text(json.dumps(response_data))
 
@@ -136,14 +134,12 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
                     await websocket.send_text(json.dumps({
                         "request_id": request_id,
                         "answer": answer,
-                        "final_offer": False
                     }))
 
                 except ValueError as e:
                     await websocket.send_text(json.dumps({
                         "request_id": request_id,
                         "answer": str(e),
-                        "final_offer": True
                     }))
 
 

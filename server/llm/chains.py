@@ -18,7 +18,7 @@ parser = PydanticOutputParser(pydantic_object=AgentResponse)
 
 # Cadeias LLM
 buyer_chain = buyer_prompt | openai_llm | parser
-seller_chain = seller_prompt | openai_llm | parser
+seller_chain = seller_prompt | openai_llm 
 resumo_chain = resumo_prompt | openai_llm
-first_interest_chain = first_interest_prompt | openai_llm | parser
+first_interest_chain = first_interest_prompt | openai_llm
 interestChecker_chain = prompt_interestChecker | openai_llm

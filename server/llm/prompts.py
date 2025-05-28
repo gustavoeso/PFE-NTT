@@ -13,6 +13,8 @@ buyer_prompt = ChatPromptTemplate.from_messages([
     - Você está buscando o: {desired_item}.
     - Seu orçamento máximo é de R$ {max_price}.
     - Além do produto desejado, também possui interesse em: {buyer_interests}.
+    - Suas respostas podem considerar e fazer referência a esses interesses.
+    - Produtos semelhantes aos interesses definidos podem ser considerados também como desejados.
     - Você deve tentar comprar o produto desejado ou algo de seu interesse gastando o mínimo possível.
     - Caso não possua o produto desejado ou esteja fora do orçamento, pode flexibilizar o pedido para algo similar, principalmente se estiver alinhado a seus interesses.
     - Evite fazer muitas perguntas a respeito, apenas tente chegar em um produto satisfatório considerando seu objetivo e interesses.
@@ -71,8 +73,6 @@ first_interest_prompt = ChatPromptTemplate.from_messages([
     Histórico da conversa até agora:
     {history}
 
-    Responda em JSON utilizando o seguinte formato:
-    {format_instructions}
     """),
 
     HumanMessagePromptTemplate.from_template("""
@@ -105,9 +105,6 @@ seller_prompt = ChatPromptTemplate.from_messages([
     Histórico da conversa até agora:
     {history}
 
-    Responda com um JSON contendo os campos:
-    {format_instructions}
-
     """),
     HumanMessagePromptTemplate.from_template("""
     A última fala do Comprador (Buyer) foi:
@@ -135,7 +132,6 @@ resumo_prompt = ChatPromptTemplate.from_messages([
     )
 ])
 
-# Prompt Loja
 prompt_loja_prompt = PromptTemplate( 
     input_variables=["store_number", "user_request"],
     template="""
@@ -150,7 +146,6 @@ WHERE produto ILIKE '%...%' AND tipo ILIKE '%...%' AND qtd > 0;
 """
 )
 
-# Fallback Prompt
 prompt_loja_fallback_chain = PromptTemplate(
     input_variables=["store_number", "user_request", "min_price", "max_price"],
     template="""
